@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * SUN"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ case(github.event_name == 'pull_request', github.event.pull_request.number, github.ref) }}
+  cancel-in-progress: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read # checkout and mise install
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          version: 2026.6.12
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run check
+        if: github.event_name != 'schedule'
+        run: mise run check --lint
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run flaky check
+        if: github.event_name == 'schedule'
+        run: mise run check --lint --flaky
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  ci-check:
+    name: CI Check
+    needs:
+      - lint
+    # ref: https://github.com/aquaproj/aqua-registry/pull/38449#issuecomment-3038859524
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+
+    steps:
+      - run: exit 1
+
+  actions-timeline:
+    name: Generate Actions Timeline
+    needs:
+      - ci-check
+    if: always() && !cancelled()
+
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read # actions-timeline reads workflow run metadata
+
+    steps:
+      - name: actions-timeline
+        uses: Kesin11/actions-timeline@44c9c178ffb2fb1d9859614a3ffa79ccfb77565e # v3.1.0

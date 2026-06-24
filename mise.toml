@@ -1,0 +1,25 @@
+# ref: https://mise.jdx.dev/configuration.html
+#:schema https://mise.jdx.dev/schema/mise.json
+
+min_version = "2026.6.12"
+
+[tools]
+hk = "1.48.0"
+pkl = "0.31.1"
+actionlint = "1.7.12"
+ghalint = "1.5.6"
+pinact = "4.1.0"
+zizmor = "1.26.1"
+shellcheck = "0.11.0"
+lychee = "0.24.2"
+"npm:semantic-release" = "25.0.3"
+
+[task_config]
+includes = ["tasks.toml"]
+
+[hooks]
+postinstall = """
+{% if env.CI is undefined %}
+  hk install --mise
+{% endif %}
+"""

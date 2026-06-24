@@ -1,0 +1,51 @@
+{
+	// ref: https://docs.renovatebot.com/configuration-options/
+	$schema: "https://docs.renovatebot.com/renovate-schema.json",
+	extends: ["github>risu729/renovate-config#3.17.0"],
+	// Custom managers append to the preset; they cannot override managerFilePatterns
+	// on an inherited entry. Scope jdx/hk updates to preset files not covered by the
+	// shared hk.pkl manager.
+	// ref: https://github.com/renovatebot/renovate/issues/21760
+	customManagers: [
+		{
+			customType: "regex",
+			description: "Updates jdx/hk package imports in hk-config preset files",
+			managerFilePatterns: [
+				"/(^|/)presets\\.pkl$/",
+				"/(^|/)helpers\\.pkl$/",
+			],
+			datasourceTemplate: "github-releases",
+			depNameTemplate: "hk",
+			packageNameTemplate: "jdx/hk",
+			extractVersionTemplate: "^v(?<version>.+)$",
+			matchStrings: [
+				"package://github\\.com/jdx/hk/releases/download/v(?<currentValue>[^/]+)/hk@[^#]+#",
+			],
+			autoReplaceStringTemplate: "package://github.com/jdx/hk/releases/download/v{{{newValue}}}/hk@{{{newValue}}}#",
+		},
+		{
+			customType: "regex",
+			description: "Updates min_hk_version in hk-config presets.pkl",
+			managerFilePatterns: ["/(^|/)presets\\.pkl$/"],
+			datasourceTemplate: "github-releases",
+			depNameTemplate: "hk",
+			packageNameTemplate: "jdx/hk",
+			extractVersionTemplate: "^v(?<version>.+)$",
+			matchStrings: ["min_hk_version = \"(?<currentValue>[^\"]+)\""],
+			autoReplaceStringTemplate: "min_hk_version = \"{{{newValue}}}\"",
+		},
+		{
+			customType: "regex",
+			description: "Updates hk-config version in README examples",
+			managerFilePatterns: ["/(^|/)README\\.md$/"],
+			datasourceTemplate: "github-releases",
+			depNameTemplate: "hk-config",
+			packageNameTemplate: "risu729/hk-config",
+			extractVersionTemplate: "^v(?<version>.+)$",
+			matchStrings: [
+				"https://raw\\.githubusercontent\\.com/risu729/hk-config/v(?<currentValue>[^/]+)/",
+			],
+			autoReplaceStringTemplate: "https://raw.githubusercontent.com/risu729/hk-config/v{{{newValue}}}/",
+		},
+	],
+}

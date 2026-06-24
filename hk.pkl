@@ -1,0 +1,19 @@
+/// Dogfood the in-repo preset while developing. Consumer repos pin a release URL instead.
+amends "./presets.pkl"
+import "./helpers.pkl"
+
+local picked =
+  helpers.pick(new Listing {
+    "hk-validate"
+    "pkl"
+    "pkl-format"
+    "github-actions"
+    "lychee"
+  })
+
+hooks =
+  helpers.standardHooks((picked) {
+    ["hk-validate"] = (picked["hk-validate"]) {
+      glob = List("hk.pkl", "presets.pkl", "helpers.pkl")
+    }
+  })

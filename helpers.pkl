@@ -1,0 +1,283 @@
+/// Shared hk step helpers for risu729 projects.
+module risu729.hk.helpers
+
+import "package://github.com/jdx/hk/releases/download/v1.48.0/hk@1.48.0#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.48.0/hk@1.48.0#/Config.pkl"
+
+/// YAML lockfiles matched by yamlfmt/yamllint globs — formatters/linters have no built-in ignore.
+yamlLockExcludes: List<String> = List("pnpm-lock.yaml", "aube-lock.yaml")
+
+/// Build oxfmt with exclude-blacklist narrowing (see `oxfmtExcludesForPick`).
+function oxfmtStep(excludes: List<String>): Config.Step = (Builtins.oxfmt) {
+  exclude = excludes
+}
+
+/// Auto-exclude paths from oxfmt when conflicting formatters are picked (formatters only).
+function oxfmtExcludesForPick(names: Listing<String>): List<String> =
+  let (nameList = names.toList())
+    (
+      if (nameList.contains("tombi-format") || nameList.contains("tombi"))
+        List("**/*.toml")
+      else
+        List()
+    )
+      + (
+        if (nameList.contains("yamlfmt") || nameList.contains("yaml"))
+          List("**/*.yml", "**/*.yaml")
+        else
+          List()
+      )
+      + (
+        if (nameList.contains("rumdl-format") || nameList.contains("rumdl"))
+          List("**/*.md", "**/*.markdown")
+        else
+          List()
+      )
+
+/// All shared steps and groups. Keys are top-level pick() names.
+function lintSteps(): Mapping<String, Config.Step | Config.Group> =
+  let (
+    githubActions = new Config.Group {
+      steps {
+        ["actionlint"] = (Builtins.actionlint) {
+          // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
+          // pipefail, but shellcheck cannot detect that from workflow files.
+          env {
+            ["SHELLCHECK_OPTS"] = "--enable=all --exclude=SC2312"
+          }
+        }
+        // pinact ≥ 4.0 — v4 primary flags (not backwards-compat aliases)
+        ["pinact"] = (Builtins.pinact) {
+          check_diff = "pinact run --verify-comment --check {{ files }}"
+          fix = "pinact run --verify-comment {{ files }}"
+        }
+        ["ghalint"] = (Builtins.ghalint_workflow) {
+          depends = List("pinact")
+        }
+        ["zizmor"] = (Builtins.zizmor) {
+          depends = List("pinact")
+          // `--pedantic` not in builtin
+          check_diff = "zizmor --no-progress --pedantic {{ files }}"
+          fix = "zizmor --no-progress --pedantic --fix {{ files }}"
+        }
+      }
+    }
+  )
+  let (
+    shell = new Config.Group {
+      steps {
+        ["shfmt"] = (Builtins.shfmt) {
+          // `--simplify` not in builtin
+          check_diff = "shfmt --diff --simplify {{ files }}"
+          fix = "shfmt --write --simplify {{ files }}"
+        }
+        ["shellcheck"] = (Builtins.shellcheck) {
+          // `--external-sources` follows sourced files; not in builtin
+          check = "shellcheck --external-sources {{ files }}"
+        }
+      }
+    }
+  )
+  let (
+    rust = new Config.Group {
+      steps {
+        ["clippy"] = (Builtins.cargo_clippy) {
+          // Builtin uses `--quiet` only; strict warnings-as-errors on check.
+          check =
+            "cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings"
+          // Builtin `check_first = false` — fix hook runs this only, not check first.
+          // `clippy --fix` can exit 0 while hiding remaining warnings; re-run strict check after.
+          fix =
+            #"""
+            cargo clippy --manifest-path {{workspace_indicator}} --fix --allow-dirty --allow-staged --all-targets > /dev/null 2>&1
+            cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings
+            """#
+        }
+        ["rustfmt"] = Builtins.cargo_fmt
+        ["cargo-deny"] = new Config.Step {
+          // Include `Cargo.lock` as a trigger path — must not use top-level `exclude` for lockfiles
+          glob = List("Cargo.toml", "Cargo.lock", "deny.toml")
+          check = "cargo-deny --locked check"
+        }
+      }
+    }
+  )
+  let (
+    mise = new Config.Group {
+      steps {
+        ["mise-fmt"] = (Builtins.mise) {
+          // `mise fmt` has no file args; builtin `batch=true` repeats whole-project fmt per job
+          batch = false
+        }
+        ["mise-tasks"] = new Config.Step {
+          // `mise task validate` validates the full task graph; no `{{ files }}`
+          glob = List("tasks.toml", "tasks/**", "mise.toml", "mise/**")
+          check = "mise task validate"
+        }
+      }
+    }
+  )
+  let (
+    hk = new Config.Group {
+      steps {
+        ["hk-validate"] = new Config.Step {
+          // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific — override in hk.pkl
+          glob = List("hk.pkl", ".config/hk.pkl")
+          check = "hk validate"
+        }
+        ["pkl"] = Builtins.pkl
+        ["pkl-format"] = Builtins.pkl_format
+      }
+    }
+  )
+  let (
+    hygiene = new Config.Group {
+      steps {
+        ["newlines"] = Builtins.newlines
+        ["trailing-whitespace"] = Builtins.trailing_whitespace
+        ["mixed-line-ending"] = Builtins.mixed_line_ending
+        ["byte-order-marker"] = Builtins.byte_order_marker
+        ["fix-smart-quotes"] = Builtins.fix_smart_quotes
+        ["check-merge-conflict"] = Builtins.check_merge_conflict
+        ["check-case-conflict"] = Builtins.check_case_conflict
+        ["check-symlinks"] = Builtins.check_symlinks
+        ["check-executables-have-shebangs"] = Builtins.check_executables_have_shebangs
+      }
+    }
+  )
+  let (
+    tombi = new Config.Group {
+      steps {
+        ["tombi"] = (Builtins.tombi) {
+          // `--error-on-warnings` not in builtin (`tombi lint --quiet`)
+          check = "tombi lint --error-on-warnings {{ files }}"
+        }
+        ["tombi-format"] = Builtins.tombi_format
+      }
+    }
+  )
+  let (
+    rumdl = new Config.Group {
+      steps {
+        ["rumdl"] = Builtins.rumdl
+        // No `rumdl_format` builtin — `rumdl fmt` is separate from builtin `rumdl check`
+        ["rumdl-format"] = new Config.Step {
+          glob = List("**/*.md", "**/*.markdown")
+          check_diff = "rumdl fmt --check --diff {{ files }}"
+          fix = "rumdl fmt {{ files }}"
+        }
+      }
+    }
+  )
+  let (
+    yaml = new Config.Group {
+      steps {
+        ["yamllint"] = (Builtins.yamllint) {
+          // yamlfmt/yamllint globs match lockfiles; no built-in ignore
+          exclude = yamlLockExcludes
+        }
+        ["yamlfmt"] = (Builtins.yamlfmt) {
+          // same lockfile exclude as yamllint (see above)
+          exclude = yamlLockExcludes
+        }
+      }
+    }
+  )
+    new {
+      ["github-actions"] = githubActions
+      ["shell"] = shell
+      ["rust"] = rust
+      ["oxlint"] = (Builtins.ox_lint) {
+        // Builtin `--deny-warnings`; also fail on stale `oxlint-ignore` directives.
+        // Oxlint does not lint CSS/HTML — see https://oxc.rs/docs/guide/usage/linter.html
+        check =
+          "oxlint --deny-warnings --report-unused-disable-directives-severity error {{ files }}"
+        fix =
+          "oxlint --deny-warnings --report-unused-disable-directives-severity error --fix {{ files }}"
+      }
+      ["oxfmt"] = oxfmtStep(List())
+      ["tombi"] = tombi
+      ["rumdl"] = rumdl
+      ["yaml"] = yaml
+      ["typos"] = Builtins.typos
+      ["hadolint"] = (Builtins.hadolint) {
+        // `--failure-threshold none` reports all severities; builtin default is `warning`
+        check = "hadolint --failure-threshold none {{ files }}"
+      }
+      ["mise"] = mise
+      ["lychee"] = (Builtins.lychee) {
+        check = "lychee --no-progress --verbose {{ files }}"
+        profiles = List("flaky")
+      }
+      ["hygiene"] = hygiene
+      ["betterleaks"] = Builtins.betterleaks
+      ["tsc"] = Builtins.tsc
+      ["hk"] = hk
+    }
+
+/// Group keys searched when [pick] names a step that is not a top-level catalog key.
+/// Add new groups here when introducing a catalog group.
+local const catalogGroupNames =
+  List("github-actions", "shell", "rust", "tombi", "rumdl", "yaml", "mise", "hygiene", "hk")
+
+/// Resolve a step name from inside a catalog group (not a top-level pick key).
+function findCatalogStep(
+  name: String,
+  catalog: Mapping<String, Config.Step | Config.Group>,
+): Config.Step =
+  let (
+    fromGroup =
+      catalogGroupNames.fold(null as Config.Step?, (found, groupName) ->
+        if (found != null)
+          found
+        else
+          let (entry = catalog[groupName])
+            if (entry is Config.Group && (entry as Config.Group).steps.containsKey(name))
+              (entry as Config.Group).steps[name]
+            else
+              null
+      )
+  )
+    fromGroup!!
+
+/// Select steps by name from [lintSteps]. Unknown names fail at eval time.
+///
+/// Accepts top-level catalog keys (steps or whole groups) **or** individual step names
+/// from inside a group (e.g. `"hk-validate"` without `"pkl-format"`).
+/// When `oxfmt` is picked, exclude patterns are merged for conflicting formatters.
+function pick(names: Listing<String>): Mapping<String, Config.Step | Config.Group> =
+  let (nameList = names.toList())
+  let (catalog = lintSteps())
+  let (
+    base =
+      nameList.fold(
+        new Mapping<String, Config.Step | Config.Group> {},
+        (acc, name) ->
+          if (catalog.containsKey(name))
+            (acc) { [name] = catalog[name] }
+          else
+            (acc) { [name] = findCatalogStep(name, catalog) },
+      )
+  )
+    if (nameList.contains("oxfmt"))
+      (base) { ["oxfmt"] = oxfmtStep(oxfmtExcludesForPick(names)) }
+    else
+      base
+
+/// Standard hooks for picked steps.
+function standardHooks(
+  picked: Mapping<String, Config.Step | Config.Group>,
+): Mapping<String, Config.Hook> = new {
+  ["pre-commit"] = new Config.Hook {
+    fix = true
+    stash = "git"
+    steps = picked
+  }
+  ["check"] = new Config.Hook {
+    steps = picked
+  }
+  ["fix"] = new Config.Hook {
+    fix = true
+    steps = picked
+  }
+}

@@ -1,0 +1,14 @@
+# ref: https://github.com/lycheeverse/lychee/blob/master/lychee.example.toml
+
+accept = [
+	"100..=103",
+	"200..=299",
+	# GitHub API rate limit
+	"429",
+]
+
+cache = false
+
+exclude_path = [".git"]
+
+exclude_all_private = true
