@@ -1,7 +1,7 @@
 {
 	// ref: https://docs.renovatebot.com/configuration-options/
 	$schema: "https://docs.renovatebot.com/renovate-schema.json",
-	extends: ["github>risu729/renovate-config#3.17.3"],
+	extends: ["github>risu729/renovate-config#3.18.0"],
 	// Custom managers append to the preset; they cannot override managerFilePatterns
 	// on an inherited entry. Scope jdx/hk updates to preset files not covered by the
 	// shared hk.pkl manager.
