@@ -12,7 +12,7 @@ pinact = "4.1.0"
 zizmor = "1.26.1"
 shellcheck = "0.11.0"
 lychee = "0.24.2"
-"npm:semantic-release" = "25.0.5"
+"npm:semantic-release" = "25.0.6"
 
 [task_config]
 includes = ["tasks.toml"]
