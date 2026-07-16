@@ -201,7 +201,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["yaml"] = yaml
       ["typos"] = Builtins.typos
       ["hadolint"] = (Builtins.hadolint) {
-        // `--failure-threshold none` reports all severities; builtin default is `warning`
+        // `--failure-threshold none` reports all severities; builtin default is `info`
         check = "hadolint --failure-threshold none {{ files }}"
       }
       ["mise"] = mise
