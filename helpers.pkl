@@ -40,6 +40,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     githubActions = new Config.Group {
       steps {
         ["actionlint"] = (Builtins.actionlint) {
+          // actionlint cannot lint action.yml directly; it checks local action metadata
+          // only when a workflow references the action with `uses: ./...`.
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.
           env {
