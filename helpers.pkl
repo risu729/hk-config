@@ -48,10 +48,15 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         }
         // pinact ≥ 4.0 — v4 primary flags (not backwards-compat aliases)
         ["pinact"] = (Builtins.pinact) {
+          // Builtin misses root and deeply nested composite action metadata files.
+          glob = List(".github/workflows/*", "**/action.*")
           check_diff = "pinact run --verify-comment --check {{ files }}"
           fix = "pinact run --verify-comment {{ files }}"
         }
         ["ghalint"] = (Builtins.ghalint_workflow) {
+          depends = List("pinact")
+        }
+        ["ghalint-action"] = (Builtins.ghalint_action) {
           depends = List("pinact")
         }
         ["zizmor"] = (Builtins.zizmor) {

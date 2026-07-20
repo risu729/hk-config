@@ -56,7 +56,7 @@ helpers.pick(new Listing {
 
 | Key | Steps |
 | --- | --- |
-| `github-actions` | `actionlint`, `pinact`, `ghalint`, `zizmor` |
+| `github-actions` | `actionlint`, `pinact`, `ghalint`, `ghalint-action`, `zizmor` |
 | `shell` | `shfmt`, `shellcheck` |
 | `rust` | `clippy`, `rustfmt`, `cargo-deny` |
 | `tombi` | `tombi`, `tombi-format` |
@@ -75,6 +75,7 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 | `actionlint` | `actionlint`, `shellcheck` |
 | `pinact` | `pinact` |
 | `ghalint` | `ghalint` |
+| `ghalint-action` | `ghalint` |
 | `zizmor` | `zizmor` |
 | `shfmt` | `shfmt` |
 | `shellcheck` | `shellcheck` |
@@ -110,6 +111,10 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 | `tsc` | `npm:typescript` |
 
 Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pkl).
+
+`ghalint-action`, `pinact`, and `zizmor` inspect composite action metadata directly.
+`actionlint` checks local action metadata only when a workflow references the action with
+`uses: ./...`; action files cannot be passed to actionlint directly.
 
 ### Repo-specific overrides
 
