@@ -11,8 +11,8 @@ See [AGENTS.md](AGENTS.md) for how to extend the catalog.
 ## Usage
 
 ```pkl
-amends "https://raw.githubusercontent.com/risu729/hk-config/v1.0.0/presets.pkl"
-import "https://raw.githubusercontent.com/risu729/hk-config/v1.0.0/helpers.pkl"
+amends "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/presets.pkl"
+import "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/helpers.pkl"
 
 hooks = helpers.standardHooks(helpers.pick(new Listing {
   "github-actions"
@@ -115,8 +115,8 @@ Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pk
 ### Repo-specific overrides
 
 ```pkl
-amends "https://raw.githubusercontent.com/risu729/hk-config/v1.0.0/presets.pkl"
-import "https://raw.githubusercontent.com/risu729/hk-config/v1.0.0/helpers.pkl"
+amends "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/presets.pkl"
+import "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/helpers.pkl"
 
 hooks = helpers.standardHooks((helpers.pick(new Listing {
   "tombi-format"
