@@ -112,10 +112,6 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 
 Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pkl).
 
-`ghalint-action`, `pinact`, and `zizmor` inspect composite action metadata directly.
-`actionlint` checks local action metadata only when a workflow references the action with
-`uses: ./...`; action files cannot be passed to actionlint directly.
-
 ### Repo-specific overrides
 
 ```pkl
