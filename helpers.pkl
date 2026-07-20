@@ -40,6 +40,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     githubActions = new Config.Group {
       steps {
         ["actionlint"] = (Builtins.actionlint) {
+          // actionlint cannot lint action.yml directly; it checks local action metadata
+          // only when a workflow references the action with `uses: ./...`.
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.
           env {
@@ -48,10 +50,15 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         }
         // pinact ≥ 4.0 — v4 primary flags (not backwards-compat aliases)
         ["pinact"] = (Builtins.pinact) {
+          // Builtin misses root and deeply nested composite action metadata files.
+          glob = List(".github/workflows/*", "**/action.*")
           check_diff = "pinact run --verify-comment --check {{ files }}"
           fix = "pinact run --verify-comment {{ files }}"
         }
         ["ghalint"] = (Builtins.ghalint_workflow) {
+          depends = List("pinact")
+        }
+        ["ghalint-action"] = (Builtins.ghalint_action) {
           depends = List("pinact")
         }
         ["zizmor"] = (Builtins.zizmor) {

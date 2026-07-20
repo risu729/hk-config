@@ -56,7 +56,7 @@ helpers.pick(new Listing {
 
 | Key | Steps |
 | --- | --- |
-| `github-actions` | `actionlint`, `pinact`, `ghalint`, `zizmor` |
+| `github-actions` | `actionlint`, `pinact`, `ghalint`, `ghalint-action`, `zizmor` |
 | `shell` | `shfmt`, `shellcheck` |
 | `rust` | `clippy`, `rustfmt`, `cargo-deny` |
 | `tombi` | `tombi`, `tombi-format` |
@@ -75,6 +75,7 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 | `actionlint` | `actionlint`, `shellcheck` |
 | `pinact` | `pinact` |
 | `ghalint` | `ghalint` |
+| `ghalint-action` | `ghalint` |
 | `zizmor` | `zizmor` |
 | `shfmt` | `shfmt` |
 | `shellcheck` | `shellcheck` |
