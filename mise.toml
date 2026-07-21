@@ -1,8 +1,6 @@
 # ref: https://mise.jdx.dev/configuration.html
 #:schema https://mise.jdx.dev/schema/mise.json
 
-min_version = "2026.7.11"
-
 [tools]
 hk = "1.52.0"
 pkl = "0.32.0"
