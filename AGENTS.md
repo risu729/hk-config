@@ -207,8 +207,7 @@ Do not toggle `batch` for caching or tooling quirks; fix config or step design i
 
 **This catalog** — leave default `false` for fast native tools (`oxfmt`, `oxlint`, `pinact`,
 `zizmor`, `tombi`, `typos`, …). Keep builtin `batch = true` where hk sets it (`actionlint`,
-`shfmt`, `shellcheck`). Override to `false` only when the builtin sets `true` but the command is
-repo-wide (`mise-fmt`).
+`shfmt`, `shellcheck`).
 
 ### Template variables
 
