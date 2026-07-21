@@ -112,10 +112,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
   let (
     mise = new Config.Group {
       steps {
-        ["mise-fmt"] = (Builtins.mise) {
-          // `mise fmt` has no file args; builtin `batch=true` repeats whole-project fmt per job
-          batch = false
-        }
+        ["mise-fmt"] = Builtins.mise
         ["mise-tasks"] = new Config.Step {
           // `mise task validate` validates the full task graph; no `{{ files }}`
           glob = List("tasks.toml", "tasks/**", "mise.toml", "mise/**")
