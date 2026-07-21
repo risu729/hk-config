@@ -1,8 +1,8 @@
 /// Shared hk step helpers for risu729 projects.
 module risu729.hk.helpers
 
-import "package://github.com/jdx/hk/releases/download/v1.51.0/hk@1.51.0#/Builtins.pkl"
-import "package://github.com/jdx/hk/releases/download/v1.51.0/hk@1.51.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.52.0/hk@1.52.0#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.52.0/hk@1.52.0#/Config.pkl"
 
 /// YAML lockfiles matched by yamlfmt/yamllint globs — formatters/linters have no built-in ignore.
 yamlLockExcludes: List<String> = List("pnpm-lock.yaml", "aube-lock.yaml")
