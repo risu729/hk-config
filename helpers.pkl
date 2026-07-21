@@ -167,12 +167,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     rumdl = new Config.Group {
       steps {
         ["rumdl"] = Builtins.rumdl
-        // No `rumdl_format` builtin — `rumdl fmt` is separate from builtin `rumdl check`
-        ["rumdl-format"] = new Config.Step {
-          glob = List("**/*.md", "**/*.markdown")
-          check_diff = "rumdl fmt --check --diff {{ files }}"
-          fix = "rumdl fmt {{ files }}"
-        }
+        ["rumdl-format"] = Builtins.rumdl_format
       }
     }
   )
