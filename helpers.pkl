@@ -101,11 +101,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
             """#
         }
         ["rustfmt"] = Builtins.cargo_fmt
-        ["cargo-deny"] = new Config.Step {
-          // Include `Cargo.lock` as a trigger path — must not use top-level `exclude` for lockfiles
-          glob = List("Cargo.toml", "Cargo.lock", "deny.toml")
-          check = "cargo-deny --locked check"
-        }
+        ["cargo-deny"] = Builtins.cargo_deny
       }
     }
   )
