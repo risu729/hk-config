@@ -1,15 +1,17 @@
 /// Shared hk step helpers for risu729 projects.
 module risu729.hk.helpers
 
-import "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Builtins.pkl"
-import "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.0.0/hk@2.0.0#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.0.0/hk@2.0.0#/Config.pkl"
 
 /// YAML lockfiles matched by yamlfmt/yamllint globs — formatters/linters have no built-in ignore.
 yamlLockExcludes: List<String> = List("pnpm-lock.yaml", "aube-lock.yaml")
 
 /// Build oxfmt with exclude-blacklist narrowing (see `oxfmtExcludesForPick`).
-function oxfmtStep(excludes: List<String>): Config.Step = (Builtins.oxfmt) {
-  exclude = excludes
+function oxfmtStep(excludes: List<String>): Config.StepDefinition = (Builtins.oxfmt) {
+  step {
+    exclude = excludes
+  }
 }
 
 /// Auto-exclude paths from oxfmt when conflicting formatters are picked (formatters only).
@@ -35,7 +37,7 @@ function oxfmtExcludesForPick(names: Listing<String>): List<String> =
       )
 
 /// All shared steps and groups. Keys are top-level pick() names.
-function lintSteps(): Mapping<String, Config.Step | Config.Group> =
+function lintSteps(): Mapping<String, Config.StepDefinition | Config.Group> =
   let (
     githubActions = new Config.Group {
       steps {
@@ -44,28 +46,35 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
           // only when a workflow references the action with `uses: ./...`.
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.
-          env {
-            ["SHELLCHECK_OPTS"] = "--enable=all --exclude=SC2312"
+          step {
+            env {
+              ["SHELLCHECK_OPTS"] = "--enable=all --exclude=SC2312"
+            }
           }
         }
-        // pinact ≥ 4.0 — v4 primary flags (not backwards-compat aliases)
         ["pinact"] = (Builtins.pinact) {
-          // Builtin misses root and deeply nested composite action metadata files.
-          glob = List(".github/workflows/*", "**/action.*")
-          check_diff = "pinact run --verify-comment --check {{ files }}"
-          fix = "pinact run --verify-comment {{ files }}"
+          // Builtin `*/action.*` misses root and deeply nested composite action metadata files.
+          step {
+            glob = List(".github/workflows/*", "**/action.*")
+          }
         }
         ["ghalint"] = (Builtins.ghalint_workflow) {
-          depends = List("pinact")
+          step {
+            depends = List("pinact")
+          }
         }
         ["ghalint-action"] = (Builtins.ghalint_action) {
-          depends = List("pinact")
+          step {
+            depends = List("pinact")
+          }
         }
         ["zizmor"] = (Builtins.zizmor) {
-          depends = List("pinact")
-          // `--pedantic` not in builtin
-          check_diff = "zizmor --no-progress --pedantic {{ files }}"
-          fix = "zizmor --no-progress --pedantic --fix {{ files }}"
+          step {
+            depends = List("pinact")
+            // `--pedantic` not in builtin
+            check_diff = "zizmor --no-progress --pedantic {{ files }}"
+            fix = "zizmor --no-progress --pedantic --fix {{ files }}"
+          }
         }
       }
     }
@@ -75,12 +84,16 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       steps {
         ["shfmt"] = (Builtins.shfmt) {
           // `--simplify` not in builtin
-          check_diff = "shfmt --diff --simplify {{ files }}"
-          fix = "shfmt --write --simplify {{ files }}"
+          step {
+            check_diff = "shfmt --diff --simplify {{ files }}"
+            fix = "shfmt --write --simplify {{ files }}"
+          }
         }
         ["shellcheck"] = (Builtins.shellcheck) {
           // `--external-sources` follows sourced files; not in builtin
-          check = "shellcheck --external-sources {{ files }}"
+          step {
+            check = "shellcheck --external-sources {{ files }}"
+          }
         }
       }
     }
@@ -89,16 +102,18 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     rust = new Config.Group {
       steps {
         ["clippy"] = (Builtins.cargo_clippy) {
-          // Builtin uses `--quiet` only; strict warnings-as-errors on check.
-          check =
-            "cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings"
-          // Builtin `check_first = false` — fix hook runs this only, not check first.
-          // `clippy --fix` can exit 0 while hiding remaining warnings; re-run strict check after.
-          fix =
-            #"""
-            cargo clippy --manifest-path {{workspace_indicator}} --fix --allow-dirty --allow-staged --all-targets > /dev/null 2>&1
-            cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings
-            """#
+          step {
+            // Builtin uses `--quiet` only; strict warnings-as-errors on check.
+            check =
+              "cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings"
+            // Builtin `check_first = false` — fix hook runs this only, not check first.
+            // `clippy --fix` can exit 0 while hiding remaining warnings; re-run strict check after.
+            fix =
+              #"""
+              cargo clippy --manifest-path {{workspace_indicator}} --fix --allow-dirty --allow-staged --all-targets > /dev/null 2>&1
+              cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings
+              """#
+          }
         }
         ["rustfmt"] = Builtins.cargo_fmt
         ["cargo-deny"] = Builtins.cargo_deny
@@ -122,7 +137,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       steps {
         ["hk-validate"] = new Config.Step {
           // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific — override in hk.pkl
-          glob = List("hk.pkl", ".config/hk.pkl")
+          glob = List("hk.pkl", "hk.local.pkl", ".config/hk.pkl")
           check = "hk validate"
         }
         ["pkl"] = Builtins.pkl
@@ -150,7 +165,9 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       steps {
         ["tombi"] = (Builtins.tombi) {
           // `--error-on-warnings` not in builtin (`tombi lint --quiet`)
-          check = "tombi lint --error-on-warnings {{ files }}"
+          step {
+            check = "tombi lint --error-on-warnings {{ files }}"
+          }
         }
         ["tombi-format"] = Builtins.tombi_format
       }
@@ -169,11 +186,15 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       steps {
         ["yamllint"] = (Builtins.yamllint) {
           // yamlfmt/yamllint globs match lockfiles; no built-in ignore
-          exclude = yamlLockExcludes
+          step {
+            exclude = yamlLockExcludes
+          }
         }
         ["yamlfmt"] = (Builtins.yamlfmt) {
           // same lockfile exclude as yamllint (see above)
-          exclude = yamlLockExcludes
+          step {
+            exclude = yamlLockExcludes
+          }
         }
       }
     }
@@ -185,10 +206,12 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["oxlint"] = (Builtins.ox_lint) {
         // Builtin `--deny-warnings`; also fail on stale `oxlint-ignore` directives.
         // Oxlint does not lint CSS/HTML — see https://oxc.rs/docs/guide/usage/linter.html
-        check =
-          "oxlint --deny-warnings --report-unused-disable-directives-severity error {{ files }}"
-        fix =
-          "oxlint --deny-warnings --report-unused-disable-directives-severity error --fix {{ files }}"
+        step {
+          check =
+            "oxlint --deny-warnings --report-unused-disable-directives-severity error {{ files }}"
+          fix =
+            "oxlint --deny-warnings --report-unused-disable-directives-severity error --fix {{ files }}"
+        }
       }
       ["oxfmt"] = oxfmtStep(List())
       ["tombi"] = tombi
@@ -197,12 +220,16 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["typos"] = Builtins.typos
       ["hadolint"] = (Builtins.hadolint) {
         // `--failure-threshold none` reports all severities; builtin default is `info`
-        check = "hadolint --failure-threshold none {{ files }}"
+        step {
+          check = "hadolint --failure-threshold none {{ files }}"
+        }
       }
       ["mise"] = mise
       ["lychee"] = (Builtins.lychee) {
-        check = "lychee --no-progress --verbose {{ files }}"
-        profiles = List("flaky")
+        step {
+          check = "lychee --no-progress --verbose {{ files }}"
+          profiles = List("flaky")
+        }
       }
       ["hygiene"] = hygiene
       ["betterleaks"] = Builtins.betterleaks
@@ -218,11 +245,11 @@ local const catalogGroupNames =
 /// Resolve a step name from inside a catalog group (not a top-level pick key).
 function findCatalogStep(
   name: String,
-  catalog: Mapping<String, Config.Step | Config.Group>,
-): Config.Step =
+  catalog: Mapping<String, Config.StepDefinition | Config.Group>,
+): Config.StepDefinition =
   let (
     fromGroup =
-      catalogGroupNames.fold(null as Config.Step?, (found, groupName) ->
+      catalogGroupNames.fold(null as Config.StepDefinition?, (found, groupName) ->
         if (found != null)
           found
         else
@@ -240,13 +267,13 @@ function findCatalogStep(
 /// Accepts top-level catalog keys (steps or whole groups) **or** individual step names
 /// from inside a group (e.g. `"hk-validate"` without `"pkl-format"`).
 /// When `oxfmt` is picked, exclude patterns are merged for conflicting formatters.
-function pick(names: Listing<String>): Mapping<String, Config.Step | Config.Group> =
+function pick(names: Listing<String>): Mapping<String, Config.StepDefinition | Config.Group> =
   let (nameList = names.toList())
   let (catalog = lintSteps())
   let (
     base =
       nameList.fold(
-        new Mapping<String, Config.Step | Config.Group> {},
+        new Mapping<String, Config.StepDefinition | Config.Group> {},
         (acc, name) ->
           if (catalog.containsKey(name))
             (acc) { [name] = catalog[name] }
@@ -258,21 +285,3 @@ function pick(names: Listing<String>): Mapping<String, Config.Step | Config.Grou
       (base) { ["oxfmt"] = oxfmtStep(oxfmtExcludesForPick(names)) }
     else
       base
-
-/// Standard hooks for picked steps.
-function standardHooks(
-  picked: Mapping<String, Config.Step | Config.Group>,
-): Mapping<String, Config.Hook> = new {
-  ["pre-commit"] = new Config.Hook {
-    fix = true
-    stash = "git"
-    steps = picked
-  }
-  ["check"] = new Config.Hook {
-    steps = picked
-  }
-  ["fix"] = new Config.Hook {
-    fix = true
-    steps = picked
-  }
-}

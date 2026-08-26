@@ -12,9 +12,9 @@ local picked =
     "lychee"
   })
 
-hooks =
-  helpers.standardHooks((picked) {
-    ["hk-validate"] = (picked["hk-validate"]) {
-      glob = List("hk.pkl", "presets.pkl", "helpers.pkl")
-    }
-  })
+// Top-level steps create the implicit `check`, `fix`, and `pre-commit` hooks in hk v2.
+steps = (picked) {
+  ["hk-validate"] = (picked["hk-validate"]) {
+    glob = List("hk.pkl", "presets.pkl", "helpers.pkl")
+  }
+}

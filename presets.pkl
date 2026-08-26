@@ -1,6 +1,6 @@
 /// Shared hk preset for risu729 projects.
 /// Consumers: `amends "https://raw.githubusercontent.com/risu729/hk-config/<version>/presets.pkl"`
-/// then set `hooks = helpers.standardHooks(helpers.pick(...))` in `hk.pkl`.
-amends "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Config.pkl"
+/// then set `steps = helpers.pick(...)` in `hk.pkl`.
+amends "package://github.com/jdx/hk/releases/download/v2.0.0/hk@2.0.0#/Config.pkl"
 
-min_hk_version = "1.56.1"
+min_hk_version = "2.0.0"
