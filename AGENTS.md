@@ -40,10 +40,19 @@ locking, hooks, and builtin behavior, use the [hk configuration docs](https://hk
   “no files matched” or similar noise from mis-scoped globs; narrow `glob`/`types`/`exclude`
   instead.
 
-- **Explicit `Config.Step` / `Config.Hook`** — custom catalog steps and `standardHooks()` entries
-  must use `new Config.Step { … }` / `new Config.Hook { … }`, not anonymous `{ … }` objects.
-  Anonymous objects break when consumers `amends presets.pkl`. Prefer `Builtins.*` or
-  `(Builtins.*) { … }` for overrides; do not amend builtins that carry `tests`.
+- **Builtin factories and `step { … }`** — hk v2 builtins are factory values
+  (`Config.BuiltinFactory`). Builtin-specific options (e.g. `gitleaks.staged`,
+  `pinact.version`) sit on the factory itself; **all generic `Step` overrides** (`check`,
+  `glob`, `exclude`, `env`, `depends`, …) go under the factory's nested `step { … }`.
+  Custom catalog steps must use explicit `new Config.Step { … }`, not anonymous `{ … }`
+  objects — anonymous objects break when consumers `amends presets.pkl` — and take Step
+  fields directly (no `step { … }`). Declare catalog mappings as
+  `Mapping<String, Config.StepDefinition | Config.Group>` so both shapes fit.
+
+- **No hooks in the preset** — hk v2 top-level `steps` creates the implicit `check`, `fix`,
+  and `pre-commit` hooks (pre-commit fixes, stages, and stashes with git by default).
+  Consumers assign `steps = helpers.pick(...)`; an explicit `hooks { … }` block is only for
+  overriding implicit-hook defaults in a consumer `hk.pkl`.
 
 See [Lockfiles and `types`](#lockfiles-and-types), [Template variables](#template-variables), [`check` / `check_diff` / `check_list_files`](#check-check_diff-check_list_files-and-fix), [`batch`](#batch), [`stomp` and `workspace_indicator`](#stomp-and-workspace_indicator), [oxfmt conflicts](#oxfmt-conflicts), and [Profiles](#profiles) for more detail and catalog examples.
 
@@ -64,8 +73,10 @@ See [Lockfiles and `types`](#lockfiles-and-types), [Template variables](#templat
 
 ```pkl
 ["my-linter"] = (Builtins.some_tool) {
-  // some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
-  check = "some-tool --strict {{ files }}"
+  step {
+    // some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
+    check = "some-tool --strict {{ files }}"
+  }
 }
 ```
 
@@ -120,8 +131,8 @@ builtin probe.
 **Misconfiguration:** if `check_list_files` exits non-zero but prints **no paths**, hk treats
 that as a tool failure, not “files need fixing”.
 
-Catalog examples: `pinact`, `zizmor`, `shfmt`, `rumdl-format` use `check_diff`; `oxfmt` keeps
-builtin `check_list_files`.
+Catalog examples: `zizmor` and `shfmt` override `check_diff`; `pinact`, `rumdl-format`, and
+`oxfmt` keep the builtin probes (`check_diff` / `check_list_files`).
 
 ### Minimum tool versions
 
@@ -133,12 +144,16 @@ annotate minimum versions for existing config that already works.
 // pkl format requires pkl ≥ 0.30
 ["pkl-format"] = Builtins.pkl_format
 
-// pinact ≥ 4.0 — v4 primary flags
-["pinact"] = (Builtins.pinact) {
-  check_diff = "pinact run --verify-comment --check {{ files }}"
-  ...
+// some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
+["my-linter"] = (Builtins.some_tool) {
+  step {
+    check = "some-tool --new-flag {{ files }}"
+  }
 }
 ```
+
+Builtins with versioned CLIs expose a factory option instead (e.g.
+`(Builtins.pinact) { version = "3" }`; the default tracks the current major).
 
 ### Groups and partial picks
 
@@ -247,7 +262,8 @@ Pair with **check-only, project-wide** steps so parallel formatters are not bloc
 on fix/format steps unless you accept concurrent writes.
 
 This repo: catalog `tsc` is `Builtins.tsc`. Amend picked steps in `hk.pkl` for `dir`,
-`workspace_indicator`, `depends`, `glob`, etc.
+`workspace_indicator`, `depends`, `glob`, etc. — under the factory's `step { … }` for
+builtin-based entries.
 
 ### oxfmt conflicts
 
@@ -291,9 +307,9 @@ below.
 
 - `detect-private-key` — use catalog `betterleaks` for secrets scanning
 - `check-added-large-files`
-- `check-byte-order-marker` — deprecated since hk 1.30.0 ([jdx/hk#595](https://github.com/jdx/hk/pull/595)); use `byte-order-marker`
+- `check-byte-order-marker` — removed in hk v2; use `byte-order-marker`
 - `check-conventional-commit`
-- `fix-byte-order-marker` — deprecated since hk 1.30.0 ([jdx/hk#595](https://github.com/jdx/hk/pull/595)); use `byte-order-marker`
+- `fix-byte-order-marker` — removed in hk v2; use `byte-order-marker`
 - `no-commit-to-branch`
 - `python-check-ast`
 - `python-debug-statements`
@@ -308,15 +324,16 @@ before typecheck), or extra `glob` entries (`checkJs`, `.astro`, …). Install `
 
 ## hk version bumps
 
-[`presets.pkl`](presets.pkl) inlines `min_hk_version = "x.y.z"` (no hooks). Consumer `hk.pkl`
-sets `hooks`. [Renovate](.github/renovate.json5) bumps hk `package://…` imports and README
+[`presets.pkl`](presets.pkl) inlines `min_hk_version = "x.y.z"` (no steps/hooks). Consumer
+`hk.pkl` sets top-level `steps`. [Renovate](.github/renovate.json5) bumps hk `package://…` imports and README
 example tags; [`renovate-config`](https://github.com/risu729/renovate-config) bumps
 `hk-config` raw URL tags in consumer `hk.pkl`.
 
 ## Checklist for new steps
 
-1. Builtin sufficient? If not, minimal override with intent comment.
-2. Custom step or hook? Use `new Config.Step` / `new Config.Hook` (not anonymous `{ … }`).
+1. Builtin sufficient? If not, minimal override with intent comment — generic Step fields
+   under the factory's `step { … }`, builtin-specific options on the factory itself.
+2. Custom step? Use `new Config.Step` (not anonymous `{ … }`).
 3. File scope — keep builtin `glob` unless `types`, `exclude`, or a narrower `glob` fixes a real mismatch; lockfile excludes where needed.
 4. Formatters with `fix`: builtin `check_diff` or `check_list_files` when available; plain `check` only for non-fix linters.
 5. When updating: min tool version comment if new flags require it.

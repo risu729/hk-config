@@ -14,17 +14,20 @@ See [AGENTS.md](AGENTS.md) for how to extend the catalog.
 amends "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/presets.pkl"
 import "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/helpers.pkl"
 
-hooks = helpers.standardHooks(helpers.pick(new Listing {
+steps = helpers.pick(new Listing {
   "github-actions"
   "tombi-format"
   "oxfmt"
-}))
+})
 ```
 
 Unknown step names fail at eval time.
 
 `presets.pkl` sets `min_hk_version` only — your `hk.pkl` must assign
-`hooks = helpers.standardHooks(helpers.pick(...))`.
+`steps = helpers.pick(...)`. hk v2 turns top-level `steps` into the implicit
+`check`, `fix`, and `pre-commit` hooks (pre-commit fixes, stages, and stashes
+by default), so the preset no longer defines hooks. Declare a `hooks { … }`
+block in your `hk.pkl` only to override those defaults.
 
 `pick()` accepts **group keys** (whole group) or **step keys** (one step from inside a group).
 When `oxfmt` is picked with formatters (`tombi`, `yaml`, `rumdl`, or their `*-format` steps), conflicting
@@ -118,17 +121,24 @@ Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pk
 amends "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/presets.pkl"
 import "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/helpers.pkl"
 
-hooks = helpers.standardHooks((helpers.pick(new Listing {
+steps = (helpers.pick(new Listing {
   "tombi-format"
   "oxfmt"
   "tsc"
 })) {
   ["tsc-api"] = (helpers.lintSteps()["tsc"]) {
-    workspace_indicator = "tsconfig.api.json"
-    depends = List("generate-types")
+    step {
+      workspace_indicator = "tsconfig.api.json"
+      depends = List("generate-types")
+    }
   }
-})
+}
 ```
+
+Catalog entries built from hk builtins are v2 **builtin factories** — put generic step
+overrides (`glob`, `depends`, `exclude`, …) under the factory's nested `step { … }` as
+above. Custom catalog steps (`hk-validate`, `mise-tasks`) are plain `Config.Step`s and
+take overrides directly.
 
 Override `hk-validate` `glob` in consumer `hk.pkl` when validating preset files beyond
 `hk.pkl` (this repo dogfoods with `hk.pkl`, `presets.pkl`, `helpers.pkl`).
@@ -181,8 +191,8 @@ Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your r
 
 | File | Purpose |
 |------|---------|
-| `presets.pkl` | `min_hk_version` (no hooks) |
-| `helpers.pkl` | `lintSteps()`, `pick()`, `standardHooks()` |
+| `presets.pkl` | `min_hk_version` (no steps/hooks) |
+| `helpers.pkl` | `lintSteps()`, `pick()` |
 | `hk.pkl` | In-repo dogfood |
 | `AGENTS.md` | How to add catalog entries |
 
