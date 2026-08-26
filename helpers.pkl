@@ -53,7 +53,8 @@ function lintSteps(): Mapping<String, Config.StepDefinition | Config.Group> =
           }
         }
         ["pinact"] = (Builtins.pinact) {
-          // Builtin `*/action.*` misses root and deeply nested composite action metadata files.
+          // Builtin `*/action.*` misses a root-level action metadata file (hk globs let `*`
+          // cross directories, so nested ones already match); `**/action.*` also covers root.
           step {
             glob = List(".github/workflows/*", "**/action.*")
           }
