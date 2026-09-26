@@ -64,7 +64,7 @@ See [Lockfiles and `types`](#lockfiles-and-types), [Template variables](#templat
 
 ```pkl
 ["my-linter"] = (Builtins.some_tool) {
-  // Treat warnings as errors to enforce this preset's strict lint policy.
+  // some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
   check = "some-tool --strict {{ files }}"
 }
 ```
@@ -128,11 +128,27 @@ that as a tool failure, not “files need fixing”.
 Catalog examples: `pinact`, `zizmor`, `shfmt`, `rumdl-format` use `check_diff`; `oxfmt` keeps
 builtin `check_list_files`.
 
-### Current tool behavior
+### Current hk behavior
 
-Target the current hk and tool behavior. Explain the intent of overrides without
-version-specific comments or migration history. Keep concrete versions in dependency
-pins and `min_hk_version`.
+Describe hk behavior assuming the latest release, without hk-version-specific comments
+or migration history. Keep concrete hk versions in dependency pins and `min_hk_version`.
+This convention does not apply to linter or formatter version requirements.
+
+### Minimum tool versions
+
+Only when **updating** a step: if the change uses **CLI flags or behavior that require a
+specific tool version**, add a short comment noting the minimum version. Do not research or
+annotate minimum versions for existing config that already works.
+
+```pkl
+// pkl format requires pkl ≥ 0.30
+["pkl-format"] = Builtins.pkl_format
+
+// some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
+["my-linter"] = (Builtins.some_tool) {
+  check = "some-tool --new-flag {{ files }}"
+}
+```
 
 ### Shared steps and hooks
 
@@ -302,7 +318,7 @@ Pick `tsc` from the catalog (`Builtins.tsc`, `workspace_indicator = "tsconfig.js
 `tsc --noEmit`). One `tsconfig.json` per tree is enough for most repos. Amend in consumer
 `hk.pkl` when you need `dir`, a non-default `workspace_indicator`, `depends` (e.g. codegen
 before typecheck), or extra `glob` entries (`checkJs`, `.astro`, …). Install `npm:typescript`
-via mise for `hk install --mise`.
+(e.g. `7.0.1-rc` for the native compiler) via mise for `hk install --mise`.
 
 ## hk version bumps
 
@@ -318,7 +334,7 @@ sets top-level `steps` (or uses `standardHooks()` for explicit hooks).
 2. Custom step or hook? Use `new Config.Step` / `new Config.Hook` (not anonymous `{ … }`).
 3. File scope — keep builtin `glob` unless `types`, `exclude`, or a narrower `glob` fixes a real mismatch; lockfile excludes where needed.
 4. Formatters with `fix`: builtin `check_diff` or `check_list_files` when available; plain `check` only for non-fix linters.
-5. Describe current behavior and override intent without version-specific comments.
+5. When updating: min tool version comment if new flags require it.
 6. `batch` / `depends` / `profiles` only when the tool or workflow requires it.
 7. Sync [README.md](README.md) with catalog changes.
 8. `mise run check`.
