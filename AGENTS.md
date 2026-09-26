@@ -100,15 +100,20 @@ hk step commands are not interchangeable — they control **check mode**, **fix 
 `check_list_files`. A step with both `check` and `check_list_files` (e.g. `Builtins.oxfmt`)
 runs `check` in check mode — not the list command.
 
-**`hk fix` / pre-commit** (`fix = true`, `check_first = true` by default) runs a **probe**
-under read locks first (`check_diff` → `check` → `check_list_files`). Exit **0** skips `fix`;
-non-zero narrows the file set (parse diff or paths) and runs `fix` with write locks on that
-subset only. This keeps parallelism and avoids rewriting clean files.
+**`hk fix` / pre-commit** defaults to `check_first = false` and usually runs
+`fix` directly. Opt into `check_first = true` when probing a slow fixer is worthwhile.
+hk still probes `check_diff` steps in fix mode, `check_diff` / `check_list_files` steps
+when staging fixes, and steps whose `check` and `fix` commands are identical.
+
+When probing, hk uses `check_diff` → `check` → `check_list_files` under read locks.
+Exit **0** skips `fix`; a diff or path list can narrow the files to fix under write locks.
+Only `pre-commit` stages fixes by default. `hk fix` and custom hooks need `--stage` or
+hook-level `stage = true`; step-level `stage` patterns only filter staged paths.
 
 | | `check_list_files` | `check_diff` |
 | - | ------------------ | ------------ |
 | Tool output | Paths (`oxfmt --list-different`, `prettier --list-different`) | Unified diff (`shfmt -d`, `rumdl fmt --check --diff`) |
-| On fix failure | Runs `fix` on narrowed files | hk tries **`git apply` first**; `fix` only if apply fails |
+| On probe failure | Runs `fix` on narrowed files | hk tries **`git apply` first**; `fix` only if apply fails |
 | Good for | Tools with `--list-different` / `-l` | Tools with `-d` / `--diff` / patch output |
 
 **When plain `check` is enough:** linters with no autofix (`actionlint`, `tombi lint`) or steps
@@ -123,6 +128,12 @@ that as a tool failure, not “files need fixing”.
 Catalog examples: `pinact`, `zizmor`, `shfmt`, `rumdl-format` use `check_diff`; `oxfmt` keeps
 builtin `check_list_files`.
 
+### Current hk behavior
+
+Describe hk behavior assuming the latest release, without hk-version-specific comments
+or migration history. Keep concrete hk versions in dependency pins and `min_hk_version`.
+This convention does not apply to linter or formatter version requirements.
+
 ### Minimum tool versions
 
 Only when **updating** a step: if the change uses **CLI flags or behavior that require a
@@ -133,12 +144,17 @@ annotate minimum versions for existing config that already works.
 // pkl format requires pkl ≥ 0.30
 ["pkl-format"] = Builtins.pkl_format
 
-// pinact ≥ 4.0 — v4 primary flags
-["pinact"] = (Builtins.pinact) {
-  check_diff = "pinact run --verify-comment --check {{ files }}"
-  ...
+// some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
+["my-linter"] = (Builtins.some_tool) {
+  check = "some-tool --new-flag {{ files }}"
 }
 ```
+
+### Shared steps and hooks
+
+Use `steps = helpers.pick(...)` in consumer configs. hk creates implicit `check`,
+`fix`, and `pre-commit` hooks. `standardHooks()` builds explicit hooks from the same
+picked steps; custom hooks must use `new Config.Hook`.
 
 ### Groups and partial picks
 
@@ -291,9 +307,7 @@ below.
 
 - `detect-private-key` — use catalog `betterleaks` for secrets scanning
 - `check-added-large-files`
-- `check-byte-order-marker` — deprecated since hk 1.30.0 ([jdx/hk#595](https://github.com/jdx/hk/pull/595)); use `byte-order-marker`
 - `check-conventional-commit`
-- `fix-byte-order-marker` — deprecated since hk 1.30.0 ([jdx/hk#595](https://github.com/jdx/hk/pull/595)); use `byte-order-marker`
 - `no-commit-to-branch`
 - `python-check-ast`
 - `python-debug-statements`
@@ -309,8 +323,9 @@ before typecheck), or extra `glob` entries (`checkJs`, `.astro`, …). Install `
 ## hk version bumps
 
 [`presets.pkl`](presets.pkl) inlines `min_hk_version = "x.y.z"` (no hooks). Consumer `hk.pkl`
-sets `hooks`. [Renovate](.github/renovate.json5) bumps hk `package://…` imports and README
-example tags; [`renovate-config`](https://github.com/risu729/renovate-config) bumps
+sets top-level `steps` (or uses `standardHooks()` for explicit hooks).
+[Renovate](.github/renovate.json5) bumps hk `package://…` imports;
+[`renovate-config`](https://github.com/risu729/renovate-config) bumps
 `hk-config` raw URL tags in consumer `hk.pkl`.
 
 ## Checklist for new steps

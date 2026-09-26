@@ -10,21 +10,26 @@ See [AGENTS.md](AGENTS.md) for how to extend the catalog.
 
 ## Usage
 
-```pkl
-amends "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/presets.pkl"
-import "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/helpers.pkl"
+Use the latest hk. Replace `<version>` with an hk-config release tag or commit.
 
-hooks = helpers.standardHooks(helpers.pick(new Listing {
+```pkl
+amends "https://raw.githubusercontent.com/risu729/hk-config/<version>/presets.pkl"
+import "https://raw.githubusercontent.com/risu729/hk-config/<version>/helpers.pkl"
+
+steps = helpers.pick(new Listing {
   "github-actions"
   "tombi-format"
   "oxfmt"
-}))
+})
 ```
 
 Unknown step names fail at eval time.
 
-`presets.pkl` sets `min_hk_version` only — your `hk.pkl` must assign
-`hooks = helpers.standardHooks(helpers.pick(...))`.
+`presets.pkl` sets `min_hk_version` only. Assign `steps = helpers.pick(...)` to use hk's
+implicit `check`, `fix`, and `pre-commit` hooks. `check` checks files; `fix` fixes without
+staging; `pre-commit` fixes and stages selected files while stashing unstaged changes.
+Use explicit hooks to customize these defaults, or `helpers.standardHooks(...)` to
+build them from picked steps.
 
 `pick()` accepts **group keys** (whole group) or **step keys** (one step from inside a group).
 When `oxfmt` is picked with formatters (`tombi`, `yaml`, `rumdl`, or their `*-format` steps), conflicting
@@ -63,7 +68,7 @@ helpers.pick(new Listing {
 | `rumdl` | `rumdl`, `rumdl-format` |
 | `yaml` | `yamllint`, `yamlfmt` |
 | `mise` | `mise-fmt`, `mise-tasks` |
-| `hygiene` | `newlines`, `trailing-whitespace`, `mixed-line-ending`, `byte-order-marker`, `fix-smart-quotes`, `check-merge-conflict`, `check-case-conflict`, `check-symlinks`, `check-executables-have-shebangs` |
+| `hygiene` | `newlines`, `trailing-whitespace`, `mixed-line-ending`, `byte-order-marker`, `fix-smart-quotes`, `check-merge-conflict`, `check-case-conflict`, `check-symlinks`, `destroyed-symlinks`, `forbid-submodules`, `check-shebang-scripts-are-executable`, `check-executables-have-shebangs` |
 | `hk` | `hk-validate`, `pkl`, `pkl-format` |
 
 #### Steps
@@ -95,6 +100,9 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 | `check-merge-conflict` | `hk` |
 | `check-case-conflict` | `hk` |
 | `check-symlinks` | `hk` |
+| `destroyed-symlinks` | `hk` |
+| `forbid-submodules` | `hk` |
+| `check-shebang-scripts-are-executable` | `hk` |
 | `check-executables-have-shebangs` | `hk` |
 | `oxlint` | `oxlint` |
 | `oxfmt` | `oxfmt` |
@@ -115,23 +123,24 @@ Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pk
 ### Repo-specific overrides
 
 ```pkl
-amends "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/presets.pkl"
-import "https://raw.githubusercontent.com/risu729/hk-config/v1.1.0/helpers.pkl"
+amends "https://raw.githubusercontent.com/risu729/hk-config/<version>/presets.pkl"
+import "https://raw.githubusercontent.com/risu729/hk-config/<version>/helpers.pkl"
 
-hooks = helpers.standardHooks((helpers.pick(new Listing {
+steps = (helpers.pick(new Listing {
   "tombi-format"
   "oxfmt"
   "tsc"
 })) {
   ["tsc-api"] = (helpers.lintSteps()["tsc"]) {
     workspace_indicator = "tsconfig.api.json"
-    depends = List("generate-types")
   }
-})
+}
 ```
 
-Override `hk-validate` `glob` in consumer `hk.pkl` when validating preset files beyond
-`hk.pkl` (this repo dogfoods with `hk.pkl`, `presets.pkl`, `helpers.pkl`).
+`hk-validate` watches `hk.pkl`, `hk.local.pkl`, `.config/hk.pkl`, and
+`.config/hk.local.pkl`. Extend its `glob` for additional preset files. When amending this
+custom step, repeat `check = "hk validate"` until the [evaluator inheritance bug](https://github.com/risu729/hk-config/issues/124)
+is fixed.
 
 ### Profiles (`flaky`)
 
@@ -171,6 +180,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 ```
+
+### Hook behavior
+
+- `hk fix` leaves changes unstaged by default. Use `--stage` or hook-level `stage = true`
+  when staging is intended; a step's `stage` patterns only filter what gets staged.
+- `check_first` defaults to `false`. Set it explicitly for a slow fixer that benefits
+  from a probe. Diff probes still run in fix mode; list probes also run when staging fixes.
+- Picking `hygiene` rejects destroyed symlinks, submodules, and shebang scripts
+  without executable permissions. Pick individual checks if a repo intentionally allows these.
+- Avoid `local steps` when amending the schema; use a distinct name such as `workerSteps`
+  until the [evaluator name-resolution bug](https://github.com/risu729/hk-config/issues/124) is fixed.
 
 ### Updating
 
