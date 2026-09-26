@@ -12,12 +12,19 @@ local picked =
     "lychee"
   })
 
-hooks =
-  helpers.standardHooks((picked) {
-    ["hk-validate"] = (picked["hk-validate"]) {
-      // hk 2.2.0's evaluator drops the inherited command when this custom step is amended.
-      // Keep validation active until https://github.com/risu729/hk-config/issues/124 is fixed.
-      check = "hk validate"
-      glob = List("hk.pkl", "presets.pkl", "helpers.pkl")
-    }
-  })
+steps = (picked) {
+  ["hk-validate"] = (picked["hk-validate"]) {
+    // hk 2.2.0's evaluator drops the inherited command when this custom step is amended.
+    // Keep validation active until https://github.com/risu729/hk-config/issues/124 is fixed.
+    check = "hk validate"
+    glob =
+      List(
+        "hk.pkl",
+        "hk.local.pkl",
+        ".config/hk.pkl",
+        ".config/hk.local.pkl",
+        "presets.pkl",
+        "helpers.pkl",
+      )
+  }
+}

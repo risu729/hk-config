@@ -48,13 +48,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
             ["SHELLCHECK_OPTS"] = "--enable=all --exclude=SC2312"
           }
         }
-        // pinact ≥ 4.0 — v4 primary flags (not backwards-compat aliases)
-        ["pinact"] = (Builtins.pinact) {
-          // Builtin misses root and deeply nested composite action metadata files.
-          glob = List(".github/workflows/*", "**/action.*")
-          check_diff = "pinact run --verify-comment --check {{ files }}"
-          fix = "pinact run --verify-comment {{ files }}"
-        }
+        ["pinact"] = Builtins.pinact
         ["ghalint"] = (Builtins.ghalint_workflow) {
           depends = List("pinact")
         }
@@ -63,7 +57,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         }
         ["zizmor"] = (Builtins.zizmor) {
           depends = List("pinact")
-          // `--pedantic` not in builtin
+          // Enforce pedantic audits in check mode and in the fix probe.
+          check = "zizmor --no-progress --pedantic {{ files }}"
           check_diff = "zizmor --no-progress --pedantic {{ files }}"
           fix = "zizmor --no-progress --pedantic --fix {{ files }}"
         }
@@ -92,7 +87,6 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
           // Builtin uses `--quiet` only; strict warnings-as-errors on check.
           check =
             "cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings"
-          // Builtin `check_first = false` — fix hook runs this only, not check first.
           // `clippy --fix` can exit 0 while hiding remaining warnings; re-run strict check after.
           fix =
             #"""
@@ -122,7 +116,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       steps {
         ["hk-validate"] = new Config.Step {
           // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific — override in hk.pkl
-          glob = List("hk.pkl", ".config/hk.pkl")
+          glob = List("hk.pkl", "hk.local.pkl", ".config/hk.pkl", ".config/hk.local.pkl")
           check = "hk validate"
         }
         ["pkl"] = Builtins.pkl
@@ -141,6 +135,9 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         ["check-merge-conflict"] = Builtins.check_merge_conflict
         ["check-case-conflict"] = Builtins.check_case_conflict
         ["check-symlinks"] = Builtins.check_symlinks
+        ["destroyed-symlinks"] = Builtins.destroyed_symlinks
+        ["forbid-submodules"] = Builtins.forbid_submodules
+        ["check-shebang-scripts-are-executable"] = Builtins.check_shebang_scripts_are_executable
         ["check-executables-have-shebangs"] = Builtins.check_executables_have_shebangs
       }
     }
@@ -259,7 +256,7 @@ function pick(names: Listing<String>): Mapping<String, Config.Step | Config.Grou
     else
       base
 
-/// Standard hooks for picked steps.
+/// Compatibility helper for consumers using explicit hooks; new configs can assign top-level steps.
 function standardHooks(
   picked: Mapping<String, Config.Step | Config.Group>,
 ): Mapping<String, Config.Hook> = new {
