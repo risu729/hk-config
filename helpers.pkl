@@ -256,7 +256,7 @@ function pick(names: Listing<String>): Mapping<String, Config.Step | Config.Grou
     else
       base
 
-/// Compatibility helper for consumers using explicit hooks; new configs can assign top-level steps.
+/// Build explicit check, fix, and pre-commit hooks for picked steps.
 function standardHooks(
   picked: Mapping<String, Config.Step | Config.Group>,
 ): Mapping<String, Config.Hook> = new {

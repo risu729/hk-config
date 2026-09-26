@@ -64,7 +64,7 @@ See [Lockfiles and `types`](#lockfiles-and-types), [Template variables](#templat
 
 ```pkl
 ["my-linter"] = (Builtins.some_tool) {
-  // some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
+  // Treat warnings as errors to enforce this preset's strict lint policy.
   check = "some-tool --strict {{ files }}"
 }
 ```
@@ -100,7 +100,7 @@ hk step commands are not interchangeable — they control **check mode**, **fix 
 `check_list_files`. A step with both `check` and `check_list_files` (e.g. `Builtins.oxfmt`)
 runs `check` in check mode — not the list command.
 
-**`hk fix` / pre-commit** defaults to `check_first = false` in hk 2.2 and usually runs
+**`hk fix` / pre-commit** defaults to `check_first = false` and usually runs
 `fix` directly. Opt into `check_first = true` when probing a slow fixer is worthwhile.
 hk still probes `check_diff` steps in fix mode, `check_diff` / `check_list_files` steps
 when staging fixes, and steps whose `check` and `fix` commands are identical.
@@ -128,27 +128,17 @@ that as a tool failure, not “files need fixing”.
 Catalog examples: `pinact`, `zizmor`, `shfmt`, `rumdl-format` use `check_diff`; `oxfmt` keeps
 builtin `check_list_files`.
 
-### Minimum tool versions
+### Current tool behavior
 
-Only when **updating** a step: if the change uses **CLI flags or behavior that require a
-specific tool version**, add a short comment noting the minimum version. Do not research or
-annotate minimum versions for existing config that already works.
-
-```pkl
-// pkl format requires pkl ≥ 0.30
-["pkl-format"] = Builtins.pkl_format
-
-// some-tool ≥ 1.2.0 — `--new-flag` added in 1.2.0
-["my-linter"] = (Builtins.some_tool) {
-  check = "some-tool --new-flag {{ files }}"
-}
-```
+Target the current hk and tool behavior. Explain the intent of overrides without
+version-specific comments or migration history. Keep concrete versions in dependency
+pins and `min_hk_version`.
 
 ### Shared steps and hooks
 
-Use `steps = helpers.pick(...)` in new consumer configs. hk creates implicit `check`,
-`fix`, and `pre-commit` hooks. Keep `standardHooks()` for compatibility with existing
-consumers; custom hooks must still use `new Config.Hook`.
+Use `steps = helpers.pick(...)` in consumer configs. hk creates implicit `check`,
+`fix`, and `pre-commit` hooks. `standardHooks()` builds explicit hooks from the same
+picked steps; custom hooks must use `new Config.Hook`.
 
 ### Groups and partial picks
 
@@ -312,12 +302,12 @@ Pick `tsc` from the catalog (`Builtins.tsc`, `workspace_indicator = "tsconfig.js
 `tsc --noEmit`). One `tsconfig.json` per tree is enough for most repos. Amend in consumer
 `hk.pkl` when you need `dir`, a non-default `workspace_indicator`, `depends` (e.g. codegen
 before typecheck), or extra `glob` entries (`checkJs`, `.astro`, …). Install `npm:typescript`
-(e.g. `7.0.1-rc` for the native compiler) via mise for `hk install --mise`.
+via mise for `hk install --mise`.
 
 ## hk version bumps
 
 [`presets.pkl`](presets.pkl) inlines `min_hk_version = "x.y.z"` (no hooks). Consumer `hk.pkl`
-sets top-level `steps` (or uses `standardHooks()` for compatibility).
+sets top-level `steps` (or uses `standardHooks()` for explicit hooks).
 [Renovate](.github/renovate.json5) bumps hk `package://…` imports;
 [`renovate-config`](https://github.com/risu729/renovate-config) bumps
 `hk-config` raw URL tags in consumer `hk.pkl`.
@@ -328,7 +318,7 @@ sets top-level `steps` (or uses `standardHooks()` for compatibility).
 2. Custom step or hook? Use `new Config.Step` / `new Config.Hook` (not anonymous `{ … }`).
 3. File scope — keep builtin `glob` unless `types`, `exclude`, or a narrower `glob` fixes a real mismatch; lockfile excludes where needed.
 4. Formatters with `fix`: builtin `check_diff` or `check_list_files` when available; plain `check` only for non-fix linters.
-5. When updating: min tool version comment if new flags require it.
+5. Describe current behavior and override intent without version-specific comments.
 6. `batch` / `depends` / `profiles` only when the tool or workflow requires it.
 7. Sync [README.md](README.md) with catalog changes.
 8. `mise run check`.

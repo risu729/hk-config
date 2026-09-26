@@ -14,7 +14,7 @@ local picked =
 
 steps = (picked) {
   ["hk-validate"] = (picked["hk-validate"]) {
-    // hk 2.2.0's evaluator drops the inherited command when this custom step is amended.
+    // The evaluator drops the inherited command when this custom step is amended.
     // Keep validation active until https://github.com/risu729/hk-config/issues/124 is fixed.
     check = "hk validate"
     glob =

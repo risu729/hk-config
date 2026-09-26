@@ -10,8 +10,7 @@ See [AGENTS.md](AGENTS.md) for how to extend the catalog.
 
 ## Usage
 
-Requires hk 2.2.0 or newer. Replace `<version>` with an hk-config v2 release tag
-(or a commit containing this migration while testing before release).
+Use the latest hk. Replace `<version>` with an hk-config release tag or commit.
 
 ```pkl
 amends "https://raw.githubusercontent.com/risu729/hk-config/<version>/presets.pkl"
@@ -29,8 +28,8 @@ Unknown step names fail at eval time.
 `presets.pkl` sets `min_hk_version` only. Assign `steps = helpers.pick(...)` to use hk's
 implicit `check`, `fix`, and `pre-commit` hooks. `check` checks files; `fix` fixes without
 staging; `pre-commit` fixes and stages selected files while stashing unstaged changes.
-Use explicit hooks to customize these defaults. `helpers.standardHooks(...)` remains
-available for existing consumers.
+Use explicit hooks to customize these defaults, or `helpers.standardHooks(...)` to
+build them from picked steps.
 
 `pick()` accepts **group keys** (whole group) or **step keys** (one step from inside a group).
 When `oxfmt` is picked with formatters (`tombi`, `yaml`, `rumdl`, or their `*-format` steps), conflicting
@@ -182,20 +181,15 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 ```
 
-### Migrating from hk v1
+### Hook behavior
 
-Update hk and both hk-config URLs together: v1 presets use the old hk schema, while this
-preset requires hk 2.2.0 or newer. Existing `helpers.standardHooks(...)` calls still work;
-new configs can use top-level `steps`. Builtin overrides remain flat `(Builtins.tool) { ... }`
-amendments, without nested `step` blocks.
-
-- `hk fix` no longer stages changes by default. Use `--stage` or hook-level `stage = true`
+- `hk fix` leaves changes unstaged by default. Use `--stage` or hook-level `stage = true`
   when staging is intended; a step's `stage` patterns only filter what gets staged.
-- hk 2.2 defaults `check_first` to `false`. Set it explicitly for a slow fixer that benefits
+- `check_first` defaults to `false`. Set it explicitly for a slow fixer that benefits
   from a probe. Diff probes still run in fix mode; list probes also run when staging fixes.
-- Picking `hygiene` now also rejects destroyed symlinks, submodules, and shebang scripts
+- Picking `hygiene` rejects destroyed symlinks, submodules, and shebang scripts
   without executable permissions. Pick individual checks if a repo intentionally allows these.
-- Avoid `local steps` when amending the v2 schema; use a distinct name such as `workerSteps`
+- Avoid `local steps` when amending the schema; use a distinct name such as `workerSteps`
   until the [evaluator name-resolution bug](https://github.com/risu729/hk-config/issues/124) is fixed.
 
 ### Updating
