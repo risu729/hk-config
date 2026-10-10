@@ -1,8 +1,8 @@
 /// Shared hk step helpers for risu729 projects.
 module risu729.hk.helpers
 
-import "package://github.com/jdx/hk/releases/download/v2.4.0/hk@2.4.0#/Builtins.pkl"
-import "package://github.com/jdx/hk/releases/download/v2.4.0/hk@2.4.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
 
 /// YAML lockfiles matched by yamlfmt/yamllint globs — formatters/linters have no built-in ignore.
 yamlLockExcludes: List<String> = List("pnpm-lock.yaml", "aube-lock.yaml")
@@ -39,9 +39,13 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
   let (
     githubActions = new Config.Group {
       steps {
-        ["actionlint"] = (Builtins.actionlint) {
-          // actionlint cannot lint action.yml directly; it checks local action metadata
-          // only when a workflow references the action with `uses: ./...`.
+        ["jactionlint"] = new Config.Step {
+          // jactionlint >= 2.0 — correctness preserves workflow linting while
+          // zizmor continues to enforce the group's pedantic security audits.
+          glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
+          batch = true
+          check = "jactionlint --profile correctness {{ files }}"
+          diagnostic_format = "gcc"
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.
           env {

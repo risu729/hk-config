@@ -116,7 +116,7 @@ hook-level `stage = true`; step-level `stage` patterns only filter staged paths.
 | On probe failure | Runs `fix` on narrowed files | hk tries **`git apply` first**; `fix` only if apply fails |
 | Good for | Tools with `--list-different` / `-l` | Tools with `-d` / `--diff` / patch output |
 
-**When plain `check` is enough:** linters with no autofix (`actionlint`, `tombi lint`) or steps
+**When plain `check` is enough:** check-only steps (`jactionlint`, `tombi lint`) or steps
 without `fix`. **Formatters with `fix`:** prefer builtins that already ship `check_diff` or
 `check_list_files` (oxfmt, shfmt, pinact, rumdl, yamlfmt) instead of a bare `check` + `fix`
 pair. Override `check_diff` / `check_list_files` only when stricter flags differ from the
@@ -222,8 +222,8 @@ the whole run per chunk.
 Do not toggle `batch` for caching or tooling quirks; fix config or step design instead.
 
 **This catalog** — leave default `false` for fast native tools (`oxfmt`, `oxlint`, `pinact`,
-`zizmor`, `tombi`, `typos`, …). Keep builtin `batch = true` where hk sets it (`actionlint`,
-`shfmt`, `shellcheck`).
+`zizmor`, `tombi`, `typos`, …). Keep builtin `batch = true` where hk sets it (`shfmt`,
+`shellcheck`). The custom `jactionlint` step keeps the workflow linter's batching.
 
 ### Template variables
 
