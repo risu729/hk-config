@@ -51,6 +51,99 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
           env {
             ["SHELLCHECK_OPTS"] = "--enable=all --exclude=SC2312"
           }
+          tests {
+            local const workflow = ".github/workflows/test.yml"
+            local const valid =
+              """
+              name: Test
+              on: push
+              permissions: {}
+              concurrency:
+                group: ${{ github.workflow }}-${{ github.ref }}
+                cancel-in-progress: true
+              defaults:
+                run:
+                  shell: bash
+              jobs:
+                test:
+                  name: Test
+                  runs-on: ubuntu-26.04
+                  timeout-minutes: 5
+                  steps:
+                    - run: echo hello
+              """
+            ["strict exit rejects warning-only findings"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write { [workflow] = valid.replaceAll("    name: Test\n", "") }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 11
+                    severity = "warning"
+                    rule = "anonymous-definition"
+                    message = "has no"
+                  }
+                }
+              }
+            }
+            ["enforces pedantic expression wrapping"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write {
+                [workflow] =
+                  valid.replaceAll("    steps:", "    if: github.event_name == 'push'\n    steps:")
+              }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 15
+                    severity = "error"
+                    rule = "require-expression-wrapping"
+                    message = "must be wrapped"
+                  }
+                }
+              }
+            }
+            ["rejects a release job that restores a cache"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write {
+                [workflow] =
+                  """
+                  name: Release
+                  on: push
+                  permissions: {}
+                  jobs:
+                    release:
+                      runs-on: ubuntu-26.04
+                      timeout-minutes: 5
+                      steps:
+                        - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca
+                        - run: semantic-release
+                  """
+              }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 9
+                    severity = "error"
+                    rule = "cache-poisoning"
+                    message = "poisoned cache"
+                  }
+                }
+              }
+            }
+          }
         }
         ["pinact"] = Builtins.pinact
         ["ghalint"] = (Builtins.ghalint_workflow) {

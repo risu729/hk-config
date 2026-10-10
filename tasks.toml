@@ -2,6 +2,7 @@
 #:schema https://mise.jdx.dev/schema/mise-task.json
 
 [check]
+depends = ["test"]
 usage = '''
 flag "--lint" help="Run hk check instead of fix"
 flag "--flaky" help="Also enable hk flaky profile (lychee)"
@@ -13,3 +14,7 @@ hk \
   --all --no-progress --no-fail-fast
 """
 description = "Run hk linters and formatters."
+
+[test]
+description = "Test the custom jactionlint policy and diagnostics in temporary fixtures."
+run = "hk --cd tests test"
