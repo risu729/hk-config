@@ -128,7 +128,7 @@ reported severity fails the check (`--strict-exit`). It is check-only and preser
 the strict shellcheck options. The `github-actions` group also runs `zizmor --pedantic`
 for security audits, with `pinact` before the ghalint and zizmor steps.
 
-The jactionlint, shellcheck, hadolint, oxlint, and clippy checks emit formats
+The jactionlint, shellcheck, hadolint, oxlint, clippy, and typos checks emit formats
 that hk parses into diagnostics for JSON, SARIF, and agent output. Formatter diff
 and file-list commands retain their native output for applying fixes.
 

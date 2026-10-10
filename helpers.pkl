@@ -320,7 +320,23 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["tombi"] = tombi
       ["rumdl"] = rumdl
       ["yaml"] = yaml
-      ["typos"] = Builtins.typos
+      ["typos"] = new Config.Step {
+        // Keep the builtin patch/fix protocol; use brief GCC output for checks.
+        types = Builtins.typos.types
+        check = new Config.CommandSpec {
+          command = "typos --force-exclude --format brief {{ files }}"
+          effect = "read"
+        }
+        diagnostic_format = "gcc"
+        check_diff = Builtins.typos.check_diff
+        fix = Builtins.typos.fix
+        tests = (Builtins.typos.tests) {
+          // The native check returns 2 for typos; the builtin diff probe returns 1.
+          ["check bad file"] = (Builtins.typos.tests["check bad file"]) {
+            expect { code = 2 }
+          }
+        }
+      }
       ["hadolint"] = (Builtins.hadolint) {
         // `--failure-threshold none` reports all severities; builtin default is `info`
         // SARIF preserves finding severity and Dockerfile rule IDs.
