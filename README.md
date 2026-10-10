@@ -46,7 +46,7 @@ helpers.pick(new Listing { "hk" })  // hk-validate, pkl, pkl-format
 ```pkl
 helpers.pick(new Listing {
   "hk-validate"   // not pkl / pkl-format
-  "actionlint"    // not the whole github-actions group
+  "jactionlint"  // not the whole github-actions group
 })
 ```
 
@@ -61,7 +61,7 @@ helpers.pick(new Listing {
 
 | Key | Steps |
 | --- | --- |
-| `github-actions` | `actionlint`, `pinact`, `ghalint`, `ghalint-action`, `zizmor` |
+| `github-actions` | `jactionlint`, `pinact`, `ghalint`, `ghalint-action`, `zizmor` |
 | `shell` | `shfmt`, `shellcheck` |
 | `rust` | `clippy`, `rustfmt`, `cargo-deny` |
 | `tombi` | `tombi`, `tombi-format` |
@@ -77,7 +77,7 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 
 | Step | mise tools |
 | --- | --- |
-| `actionlint` | `actionlint`, `shellcheck` |
+| `jactionlint` | `jactionlint`, `shellcheck` |
 | `pinact` | `pinact` |
 | `ghalint` | `ghalint` |
 | `ghalint-action` | `ghalint` |
@@ -119,6 +119,17 @@ All pickable step keys and the **mise tools** to install for each (`hk install -
 | `tsc` | `npm:typescript` |
 
 Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pkl).
+
+### GitHub Actions linting
+
+The `jactionlint` step runs the `correctness` profile to check workflow syntax and
+expressions, including current GitHub runner labels. It is check-only and preserves
+the strict shellcheck options. The `github-actions` group also runs `zizmor --pedantic`
+for security audits, with `pinact` before the ghalint and zizmor steps.
+
+When upgrading from v2, replace the `actionlint` mise tool and any individual
+`helpers.pick()` key with `jactionlint`. Install jactionlint 2.0 or later and keep
+`shellcheck` and `zizmor`. The `github-actions` group key is unchanged.
 
 ### Repo-specific overrides
 
