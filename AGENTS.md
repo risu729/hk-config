@@ -14,9 +14,10 @@ locking, hooks, and builtin behavior, use the [hk configuration docs](https://hk
   they already match this preset’s goals. Override only for stricter CLI, different file
   selection, or ordering — and comment why each override differs from the builtin.
 
-- **Keep README.md in sync** — when the catalog changes, update [README.md](README.md)
-  (groups/steps tables, profiles, and other consumer-facing docs) to match
-  [`helpers.pkl`](helpers.pkl).
+- **Keep necessary README.md instructions accurate** — update existing tables, profiles,
+  or consumer instructions when a catalog change makes them inaccurate. Do not expand
+  [README.md](README.md) unless consumers need the added information; omit routine
+  implementation details, migration notes, and test reports.
 
 - **Separate lint and format** — when a tool exposes distinct check and format commands, use
   separate catalog steps so consumers can pick one without the other and `hk fix` only runs
@@ -73,8 +74,8 @@ See [Lockfiles and `types`](#lockfiles-and-types), [Template variables](#templat
 
 4. **Pin the tool** in consumer `mise.toml`.
 
-5. **Sync [README.md](README.md)** — groups/steps tables (mise tools column); profiles or
-   other consumer docs if the step behavior affects them.
+5. **Correct affected [README.md](README.md) instructions** — update existing groups/steps
+   tables, tool requirements, or profiles when necessary; do not routinely add prose.
 
 6. Run `mise run check`.
 
@@ -336,5 +337,5 @@ sets top-level `steps` (or uses `standardHooks()` for explicit hooks).
 4. Formatters with `fix`: builtin `check_diff` or `check_list_files` when available; plain `check` only for non-fix linters.
 5. When updating: min tool version comment if new flags require it.
 6. `batch` / `depends` / `profiles` only when the tool or workflow requires it.
-7. Sync [README.md](README.md) with catalog changes.
+7. Correct necessary existing [README.md](README.md) instructions without routine expansion.
 8. `mise run check`.
