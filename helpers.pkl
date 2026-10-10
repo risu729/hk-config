@@ -62,6 +62,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         ["zizmor"] = (Builtins.zizmor) {
           depends = List("pinact")
           // Enforce pedantic audits in check mode and in the fix probe.
+          // SARIF output suppresses finding exit codes; retain the lint gate.
           check = "zizmor --no-progress --pedantic {{ files }}"
           check_diff = "zizmor --no-progress --pedantic {{ files }}"
           fix = "zizmor --no-progress --pedantic --fix {{ files }}"
@@ -79,7 +80,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         }
         ["shellcheck"] = (Builtins.shellcheck) {
           // `--external-sources` follows sourced files; not in builtin
-          check = "shellcheck --external-sources {{ files }}"
+          check = "shellcheck --external-sources --format=gcc {{ files }}"
+          diagnostic_format = "gcc"
         }
       }
     }
@@ -90,7 +92,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         ["clippy"] = (Builtins.cargo_clippy) {
           // Builtin uses `--quiet` only; strict warnings-as-errors on check.
           check =
-            "cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings"
+            "cargo clippy --manifest-path {{workspace_indicator}} --all-targets --message-format=json -- --deny warnings"
+          diagnostic_format = "cargo-json"
           // `clippy --fix` can exit 0 while hiding remaining warnings; re-run strict check after.
           fix =
             #"""
@@ -186,8 +189,10 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["oxlint"] = (Builtins.ox_lint) {
         // Builtin `--deny-warnings`; also fail on stale `oxlint-ignore` directives.
         // Oxlint does not lint CSS/HTML — see https://oxc.rs/docs/guide/usage/linter.html
+        // SARIF carries locations and rule IDs; native JSON is not ESLint JSON.
         check =
-          "oxlint --deny-warnings --report-unused-disable-directives-severity error {{ files }}"
+          "oxlint --deny-warnings --report-unused-disable-directives-severity error --format=sarif {{ files }}"
+        diagnostic_format = "sarif"
         fix =
           "oxlint --deny-warnings --report-unused-disable-directives-severity error --fix {{ files }}"
       }
@@ -195,10 +200,28 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["tombi"] = tombi
       ["rumdl"] = rumdl
       ["yaml"] = yaml
-      ["typos"] = Builtins.typos
+      ["typos"] = new Config.Step {
+        // Keep the builtin patch/fix protocol; use brief GCC output for checks.
+        types = Builtins.typos.types
+        check = new Config.CommandSpec {
+          command = "typos --force-exclude --format brief {{ files }}"
+          effect = "read"
+        }
+        diagnostic_format = "gcc"
+        check_diff = Builtins.typos.check_diff
+        fix = Builtins.typos.fix
+        tests = (Builtins.typos.tests) {
+          // The native check returns 2 for typos; the builtin diff probe returns 1.
+          ["check bad file"] = (Builtins.typos.tests["check bad file"]) {
+            expect { code = 2 }
+          }
+        }
+      }
       ["hadolint"] = (Builtins.hadolint) {
         // `--failure-threshold none` reports all severities; builtin default is `info`
-        check = "hadolint --failure-threshold none {{ files }}"
+        // SARIF preserves finding severity and Dockerfile rule IDs.
+        check = "hadolint --failure-threshold none --format sarif {{ files }}"
+        diagnostic_format = "sarif"
       }
       ["mise"] = mise
       ["lychee"] = (Builtins.lychee) {
