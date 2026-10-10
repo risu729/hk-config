@@ -127,10 +127,6 @@ expressions, including current GitHub runner labels. It is check-only and preser
 the strict shellcheck options. The `github-actions` group also runs `zizmor --pedantic`
 for security audits, with `pinact` before the ghalint and zizmor steps.
 
-When upgrading from v2, replace the `actionlint` mise tool and any individual
-`helpers.pick()` key with `jactionlint`. Install jactionlint 2.0 or later and keep
-`shellcheck` and `zizmor`. The `github-actions` group key is unchanged.
-
 ### Repo-specific overrides
 
 ```pkl
