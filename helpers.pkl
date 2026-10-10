@@ -72,13 +72,6 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
                   steps:
                     - run: echo hello
               """
-            ["accepts a valid workflow"] = new Config.StepTest {
-              tmpdir = true
-              before = "git init"
-              files = List(workflow)
-              write { [workflow] = valid }
-              expect { files { [workflow] = valid } }
-            }
             ["strict exit rejects warning-only findings"] = new Config.StepTest {
               tmpdir = true
               before = "git init"
@@ -93,26 +86,6 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
                     severity = "warning"
                     rule = "anonymous-definition"
                     message = "has no"
-                  }
-                }
-              }
-            }
-            ["rejects workflow syntax and reports its location"] = new Config.StepTest {
-              tmpdir = true
-              before = "git init"
-              files = List(workflow)
-              write {
-                [workflow] = valid.replaceAll("on: push", "on:\n  push:\n    branch: main")
-              }
-              expect {
-                code = 1
-                diagnostics {
-                  new {
-                    path = workflow
-                    line = 4
-                    severity = "error"
-                    rule = "workflow-syntax"
-                    message = "unexpected key"
                   }
                 }
               }

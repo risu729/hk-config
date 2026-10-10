@@ -3,25 +3,5 @@ amends "../presets.pkl"
 
 import "../helpers.pkl"
 
-local picked = helpers.pick(new Listing { "jactionlint"; "shellcheck" })
-
-steps {
-  ["jactionlint"] = picked["jactionlint"]
-  ["shellcheck"] = new Step {
-    check = picked["shellcheck"].check
-    diagnostic_format = picked["shellcheck"].diagnostic_format
-    tests {
-      ["parses source locations, severity, and ShellCheck codes"] {
-        tmpdir = true
-        files = List("test.sh")
-        write { ["test.sh"] = "#!/bin/sh\necho $HOME\n" }
-        expect {
-          code = 1
-          diagnostics {
-            new { path = "test.sh"; line = 2; severity = "note"; rule = "SC2086" }
-          }
-        }
-      }
-    }
-  }
-}
+// Upstream owns builtin coverage; test only our stricter jactionlint policy.
+steps = helpers.pick(new Listing { "jactionlint" })

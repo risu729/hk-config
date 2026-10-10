@@ -16,5 +16,5 @@ hk \
 description = "Run hk linters and formatters."
 
 [test]
-description = "Test shared workflow policy and normalized diagnostics in temporary fixtures."
+description = "Test the custom jactionlint policy and diagnostics in temporary fixtures."
 run = "hk --cd tests test"
