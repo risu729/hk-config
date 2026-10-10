@@ -42,13 +42,13 @@ jobs:
           version: 2026.10.7
 
       - name: Run check
-        if: github.event_name != 'schedule'
+        if: ${{ github.event_name != 'schedule' }}
         run: mise run check --lint
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run flaky check
-        if: github.event_name == 'schedule'
+        if: ${{ github.event_name == 'schedule' }}
         run: mise run check --lint --flaky
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -69,7 +69,7 @@ jobs:
     name: Generate Actions Timeline
     needs:
       - ci-check
-    if: always() && !cancelled()
+    if: ${{ always() && !cancelled() }}
 
     runs-on: ubuntu-26.04
     timeout-minutes: 5

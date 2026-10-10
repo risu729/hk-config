@@ -40,11 +40,11 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     githubActions = new Config.Group {
       steps {
         ["jactionlint"] = new Config.Step {
-          // jactionlint >= 2.0 — correctness preserves workflow linting while
-          // zizmor continues to enforce the group's pedantic security audits.
+          // jactionlint >= 2.0 — pedantic enables the strongest offline policy.
+          // GCC output preserves severity and rule IDs for hk diagnostics.
           glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
           batch = true
-          check = "jactionlint --profile correctness {{ files }}"
+          check = "jactionlint --profile pedantic --strict-exit --format gcc {{ files }}"
           diagnostic_format = "gcc"
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.

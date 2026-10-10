@@ -122,8 +122,9 @@ Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pk
 
 ### GitHub Actions linting
 
-The `jactionlint` step runs the `correctness` profile to check workflow syntax and
-expressions, including current GitHub runner labels. It is check-only and preserves
+The `jactionlint` step runs the `pedantic` profile to check workflow syntax,
+expressions, security, and policy, including current GitHub runner labels. Every
+reported severity fails the check (`--strict-exit`). It is check-only and preserves
 the strict shellcheck options. The `github-actions` group also runs `zizmor --pedantic`
 for security audits, with `pinact` before the ghalint and zizmor steps.
 
