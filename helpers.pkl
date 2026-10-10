@@ -39,9 +39,13 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
   let (
     githubActions = new Config.Group {
       steps {
-        ["actionlint"] = (Builtins.actionlint) {
-          // actionlint cannot lint action.yml directly; it checks local action metadata
-          // only when a workflow references the action with `uses: ./...`.
+        ["jactionlint"] = new Config.Step {
+          // jactionlint >= 2.0 — correctness preserves workflow linting while
+          // zizmor continues to enforce the group's pedantic security audits.
+          glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
+          batch = true
+          check = "jactionlint --profile correctness {{ files }}"
+          diagnostic_format = "gcc"
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.
           env {
