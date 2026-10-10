@@ -122,10 +122,19 @@ Step options, override reasons, and CLI flags live in [`helpers.pkl`](helpers.pk
 
 ### GitHub Actions linting
 
-The `jactionlint` step runs the `correctness` profile to check workflow syntax and
-expressions, including current GitHub runner labels. It is check-only and preserves
+The `jactionlint` step runs the `pedantic` profile to check workflow syntax,
+expressions, security, and policy, including current GitHub runner labels. Every
+reported severity fails the check (`--strict-exit`). It is check-only and preserves
 the strict shellcheck options. The `github-actions` group also runs `zizmor --pedantic`
 for security audits, with `pinact` before the ghalint and zizmor steps.
+
+The jactionlint, shellcheck, hadolint, oxlint, and clippy checks emit formats
+that hk parses into diagnostics for JSON, SARIF, and agent output. Formatter diff
+and file-list commands retain their native output for applying fixes.
+
+Run `mise run test` to exercise valid and invalid temporary workflow fixtures,
+including expected diagnostic locations, severities, and rule IDs. `mise run check`
+also runs these tests before linting the repository.
 
 ### Repo-specific overrides
 
@@ -201,7 +210,7 @@ jobs:
 
 ### Updating
 
-Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your repo — it bumps
+Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your repo â€” it bumps
 `presets.pkl` and `helpers.pkl` URL tags in `hk.pkl`.
 
 ## Layout
@@ -215,4 +224,4 @@ Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your r
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT â€” see [LICENSE](LICENSE).

@@ -4,7 +4,7 @@ module risu729.hk.helpers
 import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Builtins.pkl"
 import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
 
-/// YAML lockfiles matched by yamlfmt/yamllint globs — formatters/linters have no built-in ignore.
+/// YAML lockfiles matched by yamlfmt/yamllint globs â€” formatters/linters have no built-in ignore.
 yamlLockExcludes: List<String> = List("pnpm-lock.yaml", "aube-lock.yaml")
 
 /// Build oxfmt with exclude-blacklist narrowing (see `oxfmtExcludesForPick`).
@@ -40,16 +40,136 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     githubActions = new Config.Group {
       steps {
         ["jactionlint"] = new Config.Step {
-          // jactionlint >= 2.0 — correctness preserves workflow linting while
-          // zizmor continues to enforce the group's pedantic security audits.
+          // jactionlint >= 2.0 â€” pedantic enables the strongest offline policy.
+          // GCC output preserves severity and rule IDs for hk diagnostics.
           glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
           batch = true
-          check = "jactionlint --profile correctness {{ files }}"
+          check = "jactionlint --profile pedantic --strict-exit --format gcc {{ files }}"
           diagnostic_format = "gcc"
           // SC2312: check-extra-masked-returns. GitHub Actions runs bash with
           // pipefail, but shellcheck cannot detect that from workflow files.
           env {
             ["SHELLCHECK_OPTS"] = "--enable=all --exclude=SC2312"
+          }
+          tests {
+            local const workflow = ".github/workflows/test.yml"
+            local const valid =
+              """
+              name: Test
+              on: push
+              permissions: {}
+              concurrency:
+                group: ${{ github.workflow }}-${{ github.ref }}
+                cancel-in-progress: true
+              defaults:
+                run:
+                  shell: bash
+              jobs:
+                test:
+                  name: Test
+                  runs-on: ubuntu-26.04
+                  timeout-minutes: 5
+                  steps:
+                    - run: echo hello
+              """
+            ["accepts a valid workflow"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write { [workflow] = valid }
+              expect { files { [workflow] = valid } }
+            }
+            ["strict exit rejects warning-only findings"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write { [workflow] = valid.replaceAll("    name: Test\n", "") }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 11
+                    severity = "warning"
+                    rule = "anonymous-definition"
+                    message = "has no"
+                  }
+                }
+              }
+            }
+            ["rejects workflow syntax and reports its location"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write {
+                [workflow] = valid.replaceAll("on: push", "on:\n  push:\n    branch: main")
+              }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 4
+                    severity = "error"
+                    rule = "workflow-syntax"
+                    message = "unexpected key"
+                  }
+                }
+              }
+            }
+            ["enforces pedantic expression wrapping"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write {
+                [workflow] =
+                  valid.replaceAll("    steps:", "    if: github.event_name == 'push'\n    steps:")
+              }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 15
+                    severity = "error"
+                    rule = "require-expression-wrapping"
+                    message = "must be wrapped"
+                  }
+                }
+              }
+            }
+            ["rejects a release job that restores a cache"] = new Config.StepTest {
+              tmpdir = true
+              before = "git init"
+              files = List(workflow)
+              write {
+                [workflow] =
+                  """
+                  name: Release
+                  on: push
+                  permissions: {}
+                  jobs:
+                    release:
+                      runs-on: ubuntu-26.04
+                      timeout-minutes: 5
+                      steps:
+                        - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca
+                        - run: semantic-release
+                  """
+              }
+              expect {
+                code = 1
+                diagnostics {
+                  new {
+                    path = workflow
+                    line = 9
+                    severity = "error"
+                    rule = "cache-poisoning"
+                    message = "poisoned cache"
+                  }
+                }
+              }
+            }
           }
         }
         ["pinact"] = Builtins.pinact
@@ -62,6 +182,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         ["zizmor"] = (Builtins.zizmor) {
           depends = List("pinact")
           // Enforce pedantic audits in check mode and in the fix probe.
+          // SARIF output suppresses finding exit codes; retain the lint gate.
           check = "zizmor --no-progress --pedantic {{ files }}"
           check_diff = "zizmor --no-progress --pedantic {{ files }}"
           fix = "zizmor --no-progress --pedantic --fix {{ files }}"
@@ -79,7 +200,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         }
         ["shellcheck"] = (Builtins.shellcheck) {
           // `--external-sources` follows sourced files; not in builtin
-          check = "shellcheck --external-sources {{ files }}"
+          check = "shellcheck --external-sources --format=gcc {{ files }}"
+          diagnostic_format = "gcc"
         }
       }
     }
@@ -90,7 +212,8 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
         ["clippy"] = (Builtins.cargo_clippy) {
           // Builtin uses `--quiet` only; strict warnings-as-errors on check.
           check =
-            "cargo clippy --manifest-path {{workspace_indicator}} --all-targets -- --deny warnings"
+            "cargo clippy --manifest-path {{workspace_indicator}} --all-targets --message-format=json -- --deny warnings"
+          diagnostic_format = "cargo-json"
           // `clippy --fix` can exit 0 while hiding remaining warnings; re-run strict check after.
           fix =
             #"""
@@ -119,7 +242,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     hk = new Config.Group {
       steps {
         ["hk-validate"] = new Config.Step {
-          // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific — override in hk.pkl
+          // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific â€” override in hk.pkl
           glob = List("hk.pkl", "hk.local.pkl", ".config/hk.pkl", ".config/hk.local.pkl")
           check = "hk validate"
         }
@@ -185,9 +308,11 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["rust"] = rust
       ["oxlint"] = (Builtins.ox_lint) {
         // Builtin `--deny-warnings`; also fail on stale `oxlint-ignore` directives.
-        // Oxlint does not lint CSS/HTML — see https://oxc.rs/docs/guide/usage/linter.html
+        // Oxlint does not lint CSS/HTML â€” see https://oxc.rs/docs/guide/usage/linter.html
+        // SARIF carries locations and rule IDs; native JSON is not ESLint JSON.
         check =
-          "oxlint --deny-warnings --report-unused-disable-directives-severity error {{ files }}"
+          "oxlint --deny-warnings --report-unused-disable-directives-severity error --format=sarif {{ files }}"
+        diagnostic_format = "sarif"
         fix =
           "oxlint --deny-warnings --report-unused-disable-directives-severity error --fix {{ files }}"
       }
@@ -198,7 +323,9 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["typos"] = Builtins.typos
       ["hadolint"] = (Builtins.hadolint) {
         // `--failure-threshold none` reports all severities; builtin default is `info`
-        check = "hadolint --failure-threshold none {{ files }}"
+        // SARIF preserves finding severity and Dockerfile rule IDs.
+        check = "hadolint --failure-threshold none --format sarif {{ files }}"
+        diagnostic_format = "sarif"
       }
       ["mise"] = mise
       ["lychee"] = (Builtins.lychee) {
