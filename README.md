@@ -210,7 +210,7 @@ jobs:
 
 ### Updating
 
-Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your repo â€” it bumps
+Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your repo — it bumps
 `presets.pkl` and `helpers.pkl` URL tags in `hk.pkl`.
 
 ## Layout
@@ -224,4 +224,4 @@ Extend [`renovate-config`](https://github.com/risu729/renovate-config) in your r
 
 ## License
 
-MIT â€” see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

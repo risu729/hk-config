@@ -4,7 +4,7 @@ module risu729.hk.helpers
 import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Builtins.pkl"
 import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
 
-/// YAML lockfiles matched by yamlfmt/yamllint globs â€” formatters/linters have no built-in ignore.
+/// YAML lockfiles matched by yamlfmt/yamllint globs — formatters/linters have no built-in ignore.
 yamlLockExcludes: List<String> = List("pnpm-lock.yaml", "aube-lock.yaml")
 
 /// Build oxfmt with exclude-blacklist narrowing (see `oxfmtExcludesForPick`).
@@ -40,7 +40,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     githubActions = new Config.Group {
       steps {
         ["jactionlint"] = new Config.Step {
-          // jactionlint >= 2.0 â€” pedantic enables the strongest offline policy.
+          // jactionlint >= 2.0 — pedantic enables the strongest offline policy.
           // GCC output preserves severity and rule IDs for hk diagnostics.
           glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
           batch = true
@@ -242,7 +242,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
     hk = new Config.Group {
       steps {
         ["hk-validate"] = new Config.Step {
-          // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific â€” override in hk.pkl
+          // Not `Builtins.hk_test` (`hk test`); glob is consumer-specific — override in hk.pkl
           glob = List("hk.pkl", "hk.local.pkl", ".config/hk.pkl", ".config/hk.local.pkl")
           check = "hk validate"
         }
@@ -308,7 +308,7 @@ function lintSteps(): Mapping<String, Config.Step | Config.Group> =
       ["rust"] = rust
       ["oxlint"] = (Builtins.ox_lint) {
         // Builtin `--deny-warnings`; also fail on stale `oxlint-ignore` directives.
-        // Oxlint does not lint CSS/HTML â€” see https://oxc.rs/docs/guide/usage/linter.html
+        // Oxlint does not lint CSS/HTML — see https://oxc.rs/docs/guide/usage/linter.html
         // SARIF carries locations and rule IDs; native JSON is not ESLint JSON.
         check =
           "oxlint --deny-warnings --report-unused-disable-directives-severity error --format=sarif {{ files }}"
