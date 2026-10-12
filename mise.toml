@@ -4,7 +4,7 @@
 min_version = "2026.10.8"
 
 [tools]
-hk = "2.5.0"
+hk = "2.6.0"
 pkl = "0.32.1"
 jactionlint = "2.0.2"
 ghalint = "1.5.6"
