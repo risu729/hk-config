@@ -1,5 +1,12 @@
 # Agent guide: extending hk-config
 
+## Language
+
+Use English consistently for repository documentation and other prose, code comments,
+commit messages, and pull request titles and descriptions. Preserve intentional
+localizations, locale-specific fixtures, quoted source text, and data whose exact
+wording is required for correctness.
+
 How to add or change entries in [`helpers.pkl`](helpers.pkl). For consumer usage, see
 [README.md](README.md).
 
