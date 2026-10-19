@@ -168,7 +168,7 @@ url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/40995
 
 [[tools."npm:semantic-release"]]
 version = "25.0.9"
-aube = { path = ".mise/locks/npm-semantic-release/25.0.9", digest = "sha256:0b0a2af141fedfbdaece874aea608a9df79ac93d0d5929963ba0f3e5c71895bc" }
+aube = { path = ".mise/locks/npm-semantic-release/25.0.9", digest = "sha256:2c4050097da8f63e167f65337f126818ec2df7347a86b31e6d7a0f01eb477df5" }
 backend = "npm:semantic-release"
 specifiers = ["25.0.9"]
 
