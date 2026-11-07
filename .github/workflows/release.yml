@@ -31,9 +31,9 @@ jobs:
           persist-credentials: false
 
       - name: Install mise
-        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.10
+          version: 2026.11.1
           install_args: --locked
           cache: false # Release tools must not restore a potentially poisoned cache.
 
@@ -55,4 +55,4 @@ jobs:
 
     steps:
       - name: actions-timeline
-        uses: Kesin11/actions-timeline@57fc93f20c6da7fbc14063c6d24a2a5627c799ad # v3.2.0
+        uses: Kesin11/actions-timeline@460b1f8a750077029ad3589824d371b200e91dcf # v3.2.1
