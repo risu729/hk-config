@@ -428,6 +428,8 @@ Release with a `fix:` commit when consumers need the new hk version.
 - Branches of merged PRs are deleted automatically. Delete branches of closed or
   abandoned PRs and other stale branches you created; leave `renovate/*`
   branches to Renovate.
+- Do not merge a PR in a repository outside the five listed in
+  [Related Repositories](#related-repositories) unless the owner says to.
 - Merging to `main` can publish a release (see [Releases](#releases)).
 
 ## Design Decisions
@@ -481,10 +483,40 @@ consume all three. The shared repositories also consume each other:
 renovate-config uses hk-config and tsconfigs, tsconfigs uses renovate-config and
 hk-config, and hk-config uses renovate-config.
 
+The shared configuration repositories are also used by other repositories of
+risu729 outside these five. Before changing a shared configuration, check how
+the change affects every consumer that is not archived. Find consumers with
+`gh search code <pin> --owner risu729`, using `risu729/renovate-config`,
+`risu729/hk-config` or `@risu729/tsconfigs` as the pin without quotes. Code
+search covers only default branches and excludes forks, and its results do not
+show whether a repository is archived, so check each one with
+`gh api repos/risu729/<repo> --jq .archived` and skip archived ones.
+
+When a change needs consumers to adapt, update them instead of adding backward
+compatibility to the shared configuration. Release the shared configuration
+first, then open a PR in each consumer that pins the new release, and link those
+PRs from the shared configuration PR. Do not merge consumer PRs outside these
+five repositories unless the owner says to (see
+[Change Workflow](#change-workflow)).
+
 ## Renovate Pull Requests
 
-Monitoring open Renovate PRs in all five repositories listed above is part of
-maintaining them.
+Check open Renovate PRs in all five repositories listed above every day.
+
+Merge a Renovate PR by hand only when it is a major update, or a grouped PR
+containing one, that meets all of these conditions:
+
+- It needs no code or configuration change in this repository.
+- It brings no new feature that this repository would want to adopt.
+- It does not affect this repository or its consumers (see
+  [Related Repositories](#related-repositories)). A major update that changes
+  what this repository publishes is never merged by an agent.
+
+Judge these from the release notes and changelog, and from the source at the
+new version when they are unclear, and follow the merge rules in
+[Change Workflow](#change-workflow). Do not merge any other Renovate PR by
+hand; Renovate automerges what its settings allow. When a major update fails a
+condition, do not change code for it; report to the owner what it would need.
 
 The [shared preset][preset] (consumers pin a release of it, so check the pinned
 tag when it differs from `main`) waits one day after a timestamped release
