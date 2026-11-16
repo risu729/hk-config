@@ -428,7 +428,7 @@ Release with a `fix:` commit when consumers need the new hk version.
 - Branches of merged PRs are deleted automatically. Delete branches of closed or
   abandoned PRs and other stale branches you created; leave `renovate/*`
   branches to Renovate.
-- Do not merge a PR in a repository outside the five listed in
+- Do not merge a PR in a repository outside the six listed in
   [Related Repositories](#related-repositories) unless the owner says to.
 - Merging to `main` can publish a release (see [Releases](#releases)).
 
@@ -495,15 +495,21 @@ Renovate updates the pin.
 - [tsconfigs](https://github.com/risu729/tsconfigs) provides the npm package
   `@risu729/tsconfigs`. Consumers pin it in `package.json`, for example
   `"@risu729/tsconfigs": "3.0.1"`, and extend it from `tsconfig.json`.
+- [wrangler-deploy-action](https://github.com/risu729/wrangler-deploy-action)
+  provides a GitHub Action that deploys prebuilt Cloudflare Workers with `cf`.
+  Like the shared configurations, it releases independently. Callers pin the
+  full commit SHA of a release with the tag as a comment, for example
+  `wrangler-deploy-action@a371aa836e01c95d3928ba1a62b052229c7184c2 # v3.0.3`.
 
 [dotfiles](https://github.com/risu729/dotfiles) and
 [github-notification-cleanup](https://github.com/risu729/github-notification-cleanup)
-consume all three. The shared repositories also consume each other:
-renovate-config uses hk-config and tsconfigs, tsconfigs uses renovate-config and
-hk-config, and hk-config uses renovate-config.
+consume all three, and both call wrangler-deploy-action. wrangler-deploy-action
+uses renovate-config and hk-config. The shared repositories also consume each
+other: renovate-config uses hk-config and tsconfigs, tsconfigs uses
+renovate-config and hk-config, and hk-config uses renovate-config.
 
 The shared configuration repositories are also used by other repositories of
-risu729 outside these five. Before changing a shared configuration, check how
+risu729 outside these six. Before changing a shared configuration, check how
 the change affects every consumer that is not archived. Find consumers with
 `gh search code <pin> --owner risu729`, using `risu729/renovate-config`,
 `risu729/hk-config` or `@risu729/tsconfigs` as the pin without quotes. Code
@@ -515,12 +521,12 @@ When a change needs consumers to adapt, update them instead of adding backward
 compatibility to the shared configuration. Release the shared configuration
 first, then open a PR in each consumer that pins the new release, and link those
 PRs from the shared configuration PR. Do not merge consumer PRs outside these
-five repositories unless the owner says to (see
+six repositories unless the owner says to (see
 [Change Workflow](#change-workflow)).
 
 ## Renovate Pull Requests
 
-Check open Renovate PRs in all five repositories listed above every day.
+Check open Renovate PRs in all six repositories listed above every day.
 
 Merge a Renovate PR by hand only when it is a major update, or a grouped PR
 containing one, that meets all of these conditions:
