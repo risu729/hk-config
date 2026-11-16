@@ -7,8 +7,6 @@ accept = [
 	"429",
 ]
 
-cache = false
-
 exclude_path = [".git"]
 
 exclude_all_private = true

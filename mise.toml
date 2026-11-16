@@ -16,7 +16,6 @@ lychee = "0.24.2"
 
 [settings]
 lockfile = true
-lockfile_mode = "generate"
 
 [task_config]
 includes = ["tasks.toml"]

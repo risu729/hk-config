@@ -389,7 +389,6 @@ function standardHooks(
     steps = picked
   }
   ["fix"] = new Config.Hook {
-    fix = true
     steps = picked
   }
 }
